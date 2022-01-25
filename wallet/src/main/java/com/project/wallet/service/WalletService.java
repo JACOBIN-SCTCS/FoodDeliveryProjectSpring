@@ -8,16 +8,16 @@ import com.project.wallet.model.TransactionData;
 public class WalletService 
 {
 
-    HashMap<Integer,Integer> wallet;
-    HashMap<Integer,Integer> initialData;
+    HashMap<Long,Long> wallet;
+    HashMap<Long,Long> initialData;
 
     public WalletService()
     {
         wallet = new HashMap<>();
         initialData = new HashMap<>();
         
-        int wallet_amount = 0;
-        List<Integer> customers = new ArrayList<Integer>(); 
+        long wallet_amount = 0;
+        List<Long> customers = new ArrayList<Long>(); 
 
         try{
             File datafile = new File("/Users/depressedcoder/code/fooddelivery/initialData.txt");
@@ -38,12 +38,12 @@ public class WalletService
                         if(data.equals(fourstar))
                         {
                             String walletAmountString = myReader.nextLine();
-                            wallet_amount = Integer.parseInt(walletAmountString);
+                            wallet_amount = Long.parseLong(walletAmountString);
                             break;
                         }
                         else
                         {
-                            customers.add(Integer.parseInt(data));
+                            customers.add(Long.parseLong(data));
                         }
                     }
                 }
@@ -66,7 +66,7 @@ public class WalletService
         }
     }
 
-    public boolean addBalance(int custId, int amount)
+    public boolean addBalance(long custId, long amount)
     {
         if(wallet.containsKey(custId))
             wallet.put(custId, wallet.get(custId) + amount);
@@ -74,7 +74,7 @@ public class WalletService
         return true;
     }
 
-    public boolean deductBalance(int custId, int amount)
+    public boolean deductBalance(long custId, long amount)
     {
         if(wallet.containsKey(custId))
         {
@@ -94,7 +94,7 @@ public class WalletService
         } 
     }
 
-    public CustomerWallet getData(int custId)
+    public CustomerWallet getData(long custId)
     {
         if(!wallet.containsKey(custId))
         {
