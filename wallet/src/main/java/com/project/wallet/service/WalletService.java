@@ -1,4 +1,5 @@
 package com.project.wallet.service;
+import java.io.File;
 import java.util.*;
 
 import com.project.wallet.model.CustomerWallet;
@@ -14,11 +15,55 @@ public class WalletService
     {
         wallet = new HashMap<>();
         initialData = new HashMap<>();
-        wallet.put(301, 2000);
-        wallet.put(302, 2000);
-        wallet.put(303, 2000);
+        
+        int wallet_amount = 0;
+        List<Integer> customers = new ArrayList<Integer>(); 
 
-        initialData.putAll(wallet);
+        try{
+            File datafile = new File("/Users/depressedcoder/code/fooddelivery/initialData.txt");
+            Scanner myReader = new Scanner(datafile);
+            int count = 0 ;
+            String fourstar = new String("****");
+            while (myReader.hasNextLine()) {
+                String data = myReader.nextLine();
+                if(data.equals(fourstar))
+                {
+                    count+=1;
+                }
+                if(count==2)
+                {
+                    while(myReader.hasNextLine())
+                    {
+                        data = myReader.nextLine();
+                        if(data.equals(fourstar))
+                        {
+                            String walletAmountString = myReader.nextLine();
+                            wallet_amount = Integer.parseInt(walletAmountString);
+                            break;
+                        }
+                        else
+                        {
+                            customers.add(Integer.parseInt(data));
+                        }
+                    }
+                }
+            }
+            myReader.close();
+        }
+        catch(Exception e)
+        {
+            System.out.println("Error Opening File");
+            e.printStackTrace();
+        }
+        
+        if(customers.size()>0)
+        {
+            for(int i=0;i<customers.size();++i)
+            {
+                wallet.put(customers.get(i), wallet_amount);
+            }
+            initialData.putAll(wallet);
+        }
     }
 
     public boolean addBalance(int custId, int amount)
