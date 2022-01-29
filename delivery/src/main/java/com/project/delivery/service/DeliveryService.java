@@ -108,7 +108,7 @@ public class DeliveryService {
     public Boolean requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
         Long totalPrice;
-        totalPrice = (long)0;
+
         for (Item item: itemList) {
 
             if (item.getRestId().equals(restId) && item.getItemId().equals(itemId)) {
@@ -118,7 +118,7 @@ public class DeliveryService {
 
             } 
         }
-     
+
       WebClient client =  WebClient.create("http://localhost:8082");
       WalletRequest payload = new WalletRequest(custId, totalPrice)  ;  
       Mono<ResponseEntity<String>> retvalue = client.post()
@@ -130,10 +130,17 @@ public class DeliveryService {
   
       ResponseEntity<String> response = retvalue.block();
 
-      System.out.println(response.getStatusCode());
-      return true;
+		int responseCode = con.getResponseCode();
+		System.out.println("GET Response Code :: " + responseCode);
+		if (responseCode == HttpURLConnection.HTTP_CREATED) { // success
+			
+            System.out.print("Success");
+		} else {
+			System.out.println("GET request not worked");
+		}
 
-      
+
+        return true;
     }
 
     public Boolean agentSignIn(Long agentId) {
