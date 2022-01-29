@@ -8,9 +8,12 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 
+import javax.print.DocFlavor.STRING;
+
 import com.project.delivery.model.Item;
 import com.project.delivery.model.WalletRequest;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -126,17 +129,9 @@ public class DeliveryService {
       .toEntity(String.class);
   
 
-		int responseCode = con.getResponseCode();
-		System.out.println("GET Response Code :: " + responseCode);
-		if (responseCode == HttpURLConnection.HTTP_CREATED) { // success
-			
-            System.out.print("Success");
-		} else {
-			System.out.println("GET request not worked");
-		}
-
-
-        return true;
+       ResponseEntity<String> walletResponse = retvalue.block();
+       System.out.println(walletResponse.getStatusCode());
+       return true;
     }
 
     public Boolean agentSignIn(Long agentId) {
