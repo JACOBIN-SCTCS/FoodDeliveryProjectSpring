@@ -67,6 +67,42 @@ public class DeliveryService {
     
     public Boolean requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
+        Long totalPrice;
+
+        for (RestaurantInventory item: restaurantInventory) {
+
+            if (item.getRestId().equals(restId) && item.getItemId().equals(itemId)) {
+                
+                totalPrice = item.getPrice() * qty;
+                break;
+
+            } 
+        }
+
+        String POST_PARAMS = "{custId:"+ Long.toString(custId) + ", amount:" + Long.toString(totalPrice) +"}";
+        //To Wallet
+        URL obj = new URL("htttp://127.0.0.1:8082");
+		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+		con.setRequestMethod("POST");
+		//con.setRequestProperty("User-Agent", USER_AGENT);
+
+        con.setDoOutput(true);
+		OutputStream os = con.getOutputStream();
+		os.write(POST_PARAMS.getBytes());
+		os.flush();
+		os.close();
+
+
+		int responseCode = con.getResponseCode();
+		System.out.println("GET Response Code :: " + responseCode);
+		if (responseCode == HttpURLConnection.HTTP_CREATED) { // success
+			
+            System.out.print("Success");
+		} else {
+			System.out.println("GET request not worked");
+		}
+
+
         return true;
     }
 
