@@ -3,9 +3,20 @@ package com.project.delivery.service;
 import java.util.ArrayList;
 import java.util.*;
 import java.io.File;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Scanner;
 
 import com.project.delivery.model.Order;
+import com.project.delivery.model.WalletRequest;
+
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import reactor.core.publisher.Mono;
+
 import com.project.delivery.model.Item;
 import com.project.delivery.model.DeliveryAgent;
 
@@ -97,8 +108,8 @@ public class DeliveryService {
     public Boolean requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
         Long totalPrice;
-
-        for (RestaurantInventory item: restaurantInventory) {
+        totalPrice = (long)0;
+        for (Item item: itemList) {
 
             if (item.getRestId().equals(restId) && item.getItemId().equals(itemId)) {
                 
@@ -107,32 +118,22 @@ public class DeliveryService {
 
             } 
         }
+     
+      WebClient client =  WebClient.create("http://localhost:8082");
+      WalletRequest payload = new WalletRequest(custId, totalPrice)  ;  
+      Mono<ResponseEntity<String>> retvalue = client.post()
+      .uri("/addBalance")
+      .contentType(MediaType.APPLICATION_JSON)
+      .body(Mono.just(payload), WalletRequest.class)
+      .retrieve()
+      .toEntity(String.class);
+  
+      ResponseEntity<String> response = retvalue.block();
 
-        String POST_PARAMS = "{custId:"+ Long.toString(custId) + ", amount:" + Long.toString(totalPrice) +"}";
-        //To Wallet
-        URL obj = new URL("htttp://127.0.0.1:8082");
-		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-		con.setRequestMethod("POST");
-		//con.setRequestProperty("User-Agent", USER_AGENT);
+      System.out.println(response.getStatusCode());
+      return true;
 
-        con.setDoOutput(true);
-		OutputStream os = con.getOutputStream();
-		os.write(POST_PARAMS.getBytes());
-		os.flush();
-		os.close();
-
-
-		int responseCode = con.getResponseCode();
-		System.out.println("GET Response Code :: " + responseCode);
-		if (responseCode == HttpURLConnection.HTTP_CREATED) { // success
-			
-            System.out.print("Success");
-		} else {
-			System.out.println("GET request not worked");
-		}
-
-
-        return true;
+      
     }
 
     public Boolean agentSignIn(Long agentId) {

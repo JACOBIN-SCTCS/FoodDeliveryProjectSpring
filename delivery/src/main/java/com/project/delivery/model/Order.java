@@ -5,10 +5,7 @@ public class Order {
     public Long orderId, agentId, custId, restId, itemId, qty;
     int status;
 
-    public Order(Long orderId) {
-        this.orderId = orderId;
-    }
-
+  
     public Order(Long custId, Long restId, Long itemId, Long qty) {
         this.custId = custId;
         this.restId = restId;
@@ -17,10 +14,6 @@ public class Order {
     }
 
 
-    public Order(Long orderId, int status) {
-        this.orderId = orderId;
-        this.status = status;
-    }
 
     public Long getOrderId() {
         return orderId;
@@ -46,6 +39,43 @@ public class Order {
         this.agentId = agentId;
     }
 
+    public void setCustId(Long custId)
+    {
+        this.custId = custId;
+    }
 
-    
+    public Long getCustId()
+    {
+        return this.custId;
+    }
+
+    public void setRestId(Long restId)
+    {
+        this.restId = restId;
+    }
+    public Long getRestId()
+    {
+        return this.restId;
+    }
+
+    public void setItemId(Long itemId)
+    {
+        this.itemId = itemId;
+    }
+    public Long getItemId()
+    {
+        return this.itemId;
+    }
+
+
+    public void setQty(Long qty)
+    {
+        this.qty = qty;
+    }
+    public Long getQty()
+    {
+        return this.qty;
+    }
+
+
 }
