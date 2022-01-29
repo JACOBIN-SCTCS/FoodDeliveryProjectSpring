@@ -107,7 +107,7 @@ public class DeliveryService {
     
     public Boolean requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
-        Long totalPrice;
+        Long totalPrice=(long)0;
 
         for (Item item: itemList) {
 
