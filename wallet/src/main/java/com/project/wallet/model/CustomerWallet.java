@@ -2,21 +2,21 @@ package com.project.wallet.model;
 
 public class CustomerWallet
 {
-    int custId;
-    int balance;
+    long custId;
+    long balance;
 
-    public CustomerWallet(int custId, int balance)
+    public CustomerWallet(long custId, long balance)
     {
         this.custId = custId;
         this.balance = balance;
     }
 
-    public int getCustId()
+    public long getCustId()
     {
         return this.custId;
     }
 
-    public int getBalance()
+    public long getBalance()
     {
         return this.balance;
     }

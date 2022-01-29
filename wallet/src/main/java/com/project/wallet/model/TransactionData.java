@@ -2,31 +2,31 @@ package com.project.wallet.model;
 
 public class TransactionData
 {
-    int custId;
-    int amount;
+    long custId;
+    long amount;
     
-    public TransactionData(int custId, int amount)
+    public TransactionData(long custId, long amount)
     {
         this.custId = custId;
         this.amount = amount;
     }
 
-    public int getCustId()
+    public long getCustId()
     {
         return this.custId;
     }
 
-    public int getAmount()
+    public long getAmount()
     {
         return this.amount;
     }
 
-    public void setCustId(int custId)
+    public void setCustId(long custId)
     {
         this.custId = custId;
     }
 
-    public void setAmount(int amount)
+    public void setAmount(long amount)
     {
         this.amount = amount;
     }

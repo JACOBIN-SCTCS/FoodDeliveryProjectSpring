@@ -1,11 +1,8 @@
 package com.project.wallet.controllers;
-import java.io.File;
-import java.util.Scanner;
 
 import com.project.wallet.model.CustomerWallet;
 import com.project.wallet.model.TransactionData;
 import com.project.wallet.service.WalletService;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,22 +18,9 @@ public class WalletController
 
     public WalletController()
     {
-        try{
-            File datafile = new File("initialData.txt");
-            Scanner myReader = new Scanner(datafile);
-            while (myReader.hasNextLine()) {
-                String data = myReader.nextLine();
-                System.out.println(data);
-            }
-            myReader.close();
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
-    
         walletService = new WalletService();
     }
+
     @PostMapping("/addBalance")
     public ResponseEntity<String> addBalance(@RequestBody TransactionData txn)
     {
