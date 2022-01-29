@@ -69,7 +69,7 @@ public class RestaurantService {
         
     }
 
-    public int acceptOrder(Long restId, Long itemId, Long qty) {
+    public Boolean acceptOrder(Long restId, Long itemId, Long qty) {
 
         for (RestaurantInventory item: restaurantInventory) {
 
@@ -78,30 +78,30 @@ public class RestaurantService {
                 if (item.getQty() >= qty) {
 
                     item.setQty(item.getQty() - qty);
-                    return 201;
+                    return true;
 
                 } else {
-                    return 410;
+                    return false;
                 }
             } 
         }
-        return 404;
+        return false;
     }
 
-    public int fillItem(Long restId, Long itemId, Long qty) {
+    public Boolean fillItem(Long restId, Long itemId, Long qty) {
 
         for (RestaurantInventory item: restaurantInventory) {
 
             if (item.getRestId().equals(restId) && item.getItemId().equals(itemId)) {
                 
                 item.setQty(item.getQty() + qty);
-                return 201;
+                return true;
             } 
         }
-        return 404;
+        return false;
     }
 
-    public int reInitialize() {
+    public Boolean reInitialize() {
 
         try {
             initialData();
@@ -110,7 +110,7 @@ public class RestaurantService {
             e.printStackTrace();
         }
 
-        return 201;
+        return true;
 
     }
     
