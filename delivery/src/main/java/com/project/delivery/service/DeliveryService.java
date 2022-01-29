@@ -1,14 +1,14 @@
 package com.project.delivery.service;
 
-import java.util.ArrayList;
-import java.util.*;
 import java.io.File;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Scanner;
 
-import com.project.delivery.model.Order;
+import com.project.delivery.model.Item;
 import com.project.delivery.model.WalletRequest;
 
 import org.springframework.http.MediaType;
@@ -16,9 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Mono;
-
-import com.project.delivery.model.Item;
-import com.project.delivery.model.DeliveryAgent;
 
 public class DeliveryService {
 
@@ -128,7 +125,6 @@ public class DeliveryService {
       .retrieve()
       .toEntity(String.class);
   
-      ResponseEntity<String> response = retvalue.block();
 
 		int responseCode = con.getResponseCode();
 		System.out.println("GET Response Code :: " + responseCode);
