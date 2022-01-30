@@ -11,6 +11,7 @@ public class Order {
         this.restId = restId;
         this.itemId = itemId;
         this.qty = qty;
+        this.agentId = -1l;
     }
 
 

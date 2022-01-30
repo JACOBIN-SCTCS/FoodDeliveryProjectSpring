@@ -1,18 +1,17 @@
 package com.project.delivery.service;
 
 import java.io.File;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 
-import javax.print.DocFlavor.STRING;
-
+import com.project.delivery.model.DeliveryAgent;
 import com.project.delivery.model.Item;
 import com.project.delivery.model.WalletRequest;
 import com.project.delivery.model.OrderRequest;
+import com.project.delivery.model.OrderStatus;
 import com.project.delivery.model.Order;
 
 import org.springframework.http.HttpStatus;
@@ -32,6 +31,9 @@ public class DeliveryService {
     PriorityQueue<Long> pendingOrderList;
     HashMap<Long, Order> orderHistory; 
 
+    final int ORDER_UNASSIGNED = 0;
+    final int ORDER_ASSIGNED = 1;
+    final int ORDER_DELIVERED = 2;
     final int SIGNED_OUT = 0;
     final int AVAIALBLE = 1;
     final int UNAVAILABLE = 2;
@@ -53,7 +55,8 @@ public class DeliveryService {
         agentStatus = new HashMap<Long,Integer>();
         availableAgents = new PriorityQueue<Long>();
         pendingOrderList = new PriorityQueue<Long>();
-
+        orderHistory = new HashMap<>();
+        
         int count = 0;
 
         while (sc.hasNextLine()) {
@@ -108,7 +111,7 @@ public class DeliveryService {
         try {
             initialData();
         } catch (Exception e) {
-            // TODO Auto-generated catch block
+            
             e.printStackTrace();
         }
         
@@ -167,7 +170,7 @@ public class DeliveryService {
                     Order currentOrder = new Order(custId, restId, itemId, qty);
                     currentOrder.setOrderId(currentOrderId);
                     currentOrder.setAgentId(assignedAgent);
-                    currentOrder.setStatus(1); //assigned
+                    currentOrder.setStatus(ORDER_ASSIGNED); //assigned
 
                     orderHistory.put(currentOrderId, currentOrder);
 
@@ -180,8 +183,8 @@ public class DeliveryService {
 
                     Order currentOrder = new Order(custId, restId, itemId, qty);
                     currentOrder.setOrderId(currentOrderId);
-                    currentOrder.setStatus(0); //Unassigned
-
+                    currentOrder.setStatus(ORDER_UNASSIGNED); //Unassigned
+                    currentOrder.setAgentId(-1l);
                     orderHistory.put(currentOrderId, currentOrder);
 
                     pendingOrderList.add(currentOrderId);
@@ -227,15 +230,17 @@ public class DeliveryService {
                 Order currentOrder = orderHistory.get(pendingOrderList.poll());
 
                 currentOrder.setAgentId(agentId);
-                currentOrder.setStatus(1); //assigned
+                currentOrder.setStatus(ORDER_ASSIGNED); //assigned
 
                 //orderHistory.put(currentOrderId, currentOrder);
 
                 agentStatus.put(agentId, UNAVAILABLE);
                 
-            } else {
+            } else 
+            {
 
                 agentStatus.put(agentId, AVAIALBLE);
+                availableAgents.add(agentId);
             }
 
             
@@ -250,29 +255,101 @@ public class DeliveryService {
         if (agentStatus.get(agentId) == AVAIALBLE) {
 
             agentStatus.put(agentId, SIGNED_OUT);
+            availableAgents.remove(agentId);
         }
 
         return true;
     }
 
-    public Boolean orderDelivered(Long orderId) {
+    public Boolean orderDelivered(Long orderId)
+    {
+        System.out.println("Order ID" + orderId );
+        Order order  = orderHistory.getOrDefault(orderId,null);
+        if(order==null || order.getStatus() != ORDER_ASSIGNED)
+        {
+               System.out.println("Invalid order");
+               return false;
+        }
+        System.out.println(order.getOrderId());
+        order.setStatus(ORDER_DELIVERED);
+        orderHistory.put(orderId, order);
+        Long agentId = order.getAgentId();
+        agentStatus.put(agentId, AVAIALBLE);
+
+        if (pendingOrderList.size() > 0) {
+
+            Order currentOrder = orderHistory.get(pendingOrderList.poll());
+
+            currentOrder.setAgentId(agentId);
+            currentOrder.setStatus(ORDER_ASSIGNED); //assigned
+
+            //orderHistory.put(currentOrderId, currentOrder);
+
+            agentStatus.put(agentId, UNAVAILABLE);
+            System.out.println("Agent" + agentId + "assigned to" + currentOrder.getOrderId());
+            
+        }
+        if(agentStatus.get(agentId)==AVAIALBLE)
+        {
+            availableAgents.add(agentId);
+        }
+        
 
         return true;
     }
+    
+    public ResponseEntity<OrderStatus> getOrderStatus(long orderId)
+    {
+        if(!orderHistory.containsKey(orderId))
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 
-    public ResponseEntity<String> getAgentStatus(long agentId) {
+        Order order = orderHistory.get(orderId);
+        int orderstatus = order.getStatus();
+        OrderStatus status = new OrderStatus(orderId);
+        if(orderstatus==ORDER_UNASSIGNED)
+        {
+            status.setStatus(new String("unassigned"));
+            //return new ResponseEntity<String>("{ \"orderId\":" + String.valueOf(order.getOrderId()) + ", \"status\": \"unassigned\" , \"agentId\":" + String.valueOf(order.getAgentId()) + " }", HttpStatus.OK);
+
+        }
+        else if (orderstatus==ORDER_ASSIGNED)
+        {
+            status.setStatus(new String("assigned"));
+            //return new ResponseEntity<String>("{ \"orderId\":" + String.valueOf(order.getOrderId()) + ", \"status\": \"assigned\" , \"agentId\":" + String.valueOf(order.getAgentId()) + " }", HttpStatus.OK);
+
+        }
+        else
+        {
+            status.setStatus(new String("delivered"));
+            //return new ResponseEntity<String>("{ \"orderId\":" + String.valueOf(order.getOrderId()) + ", \"status\": \"delivered\" , \"agentId\":" + String.valueOf(order.getAgentId()) + " }", HttpStatus.OK);
+        }
+        status.setAgentId(order.getAgentId());
+        return new ResponseEntity<OrderStatus>(status,HttpStatus.OK);
+    }
+
+    public ResponseEntity<DeliveryAgent> getAgentStatus(long agentId) {
         int status = agentStatus.get(agentId);
-
+        DeliveryAgent agent = new DeliveryAgent(agentId);
         if (status == AVAIALBLE) {
-
-            return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"available\"", HttpStatus.OK);
+            agent.setStatus(new String("available"));
 
         } else if (status == UNAVAILABLE) {
-            return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"unavailable\"", HttpStatus.OK);
+            agent.setStatus(new String("unavailable"));
+            //return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"unavailable\"", HttpStatus.OK);
         } 
         else {
-            return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"signed-out\"", HttpStatus.OK);
+            agent.setStatus(new String("signed-out"));
+            //return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"signed-out\"", HttpStatus.OK);
         }
+        return new ResponseEntity<>(agent, HttpStatus.OK);
+    }
+
+    public void reInitialize()
+    {
+        orderHistory.clear();
+        agentStatus.replaceAll((K,V) -> V =SIGNED_OUT);
+        pendingOrderList.clear();
+        availableAgents.clear();
     }
 
 

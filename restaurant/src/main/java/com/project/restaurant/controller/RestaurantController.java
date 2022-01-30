@@ -23,9 +23,9 @@ class RestaurantController {
     ResponseEntity<String> acceptOrder(@RequestBody RestaurantInventory request)
     {
         if (restaurantService.acceptOrder(request.restId, request.itemId, request.qty)) 
-            return new ResponseEntity<String>("Created", HttpStatus.CREATED);
+            return new ResponseEntity<String>("", HttpStatus.CREATED);
         else  
-            return new ResponseEntity<String>("Gone", HttpStatus.GONE);
+            return new ResponseEntity<String>("", HttpStatus.GONE);
     }
 
 
@@ -33,23 +33,17 @@ class RestaurantController {
     @PostMapping(path="/refillItem",consumes="application/json")
     ResponseEntity<String> refillItem(@RequestBody RestaurantInventory request)
     {
-        if (restaurantService.fillItem(request.restId, request.itemId, request.qty))
-            return new ResponseEntity<String>("Created", HttpStatus.CREATED);
-        else  
-            return new ResponseEntity<String>("Item not found", HttpStatus.NOT_FOUND);
+        restaurantService.fillItem(request.restId, request.itemId, request.qty);
+        return new ResponseEntity<String>("", HttpStatus.CREATED);
+       
     }
-
-    
 
     // Reinitializes the inventory
     @PostMapping(path="/reInitialize",consumes="application/json")
     ResponseEntity<String> reInitialize(@RequestBody RestaurantInventory request)
     {
-        if (restaurantService.reInitialize()) 
-            return new ResponseEntity<String>("Created", HttpStatus.CREATED);
-        else
-            return new ResponseEntity<String>("Exception Occurred", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
+        restaurantService.reInitialize();
+        return new ResponseEntity<String>("", HttpStatus.CREATED);
+   }
 
 }

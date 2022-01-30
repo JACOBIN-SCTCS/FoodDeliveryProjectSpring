@@ -1,25 +1,36 @@
 package com.project.delivery.model;
 
-public class DeliveryAgent
+public class OrderStatus 
 {
-    Long agentId;
+    Long orderId;
     String status;
-    public DeliveryAgent()
+    Long agentId;
+
+    public OrderStatus()
     {
         ;
     }
-    public DeliveryAgent(Long agentId)
+
+    public  OrderStatus(Long orderId)
     {
-        this.agentId = agentId;
-        this.status = new String("signed-out");
-    }   
+        this.orderId = orderId;
+    }
+    public Long getOrderId()
+    {
+        return this.orderId;
+    }
     public String getStatus()
     {
         return this.status;
-    } 
-    public long getAgentId()
+    }
+    public Long getAgentId()
     {
         return this.agentId;
+    }
+
+    public void setOrderId(Long orderId)
+    {
+        this.orderId = orderId;
     }
     public void setStatus(String status)
     {
