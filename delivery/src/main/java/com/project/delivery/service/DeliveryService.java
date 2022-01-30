@@ -12,24 +12,33 @@ import javax.print.DocFlavor.STRING;
 
 import com.project.delivery.model.Item;
 import com.project.delivery.model.WalletRequest;
+import com.project.delivery.model.OrderRequest;
+import com.project.delivery.model.Order;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Mono;
 
+@Component
 public class DeliveryService {
 
     List<Item> itemList;
     HashMap<Long,Integer> agentStatus;
     PriorityQueue<Long> availableAgents;
-    List<Long> pendingOrderList;
+    PriorityQueue<Long> pendingOrderList;
+    HashMap<Long, Order> orderHistory; 
 
     final int SIGNED_OUT = 0;
     final int AVAIALBLE = 1;
     final int UNAVAILABLE = 2;
+    final long INITIAL_ORDER_ID = 1000;
+
+
+    long currentOrderId = INITIAL_ORDER_ID;
   
 
     public void initialData() throws Exception {
@@ -43,7 +52,7 @@ public class DeliveryService {
         
         agentStatus = new HashMap<Long,Integer>();
         availableAgents = new PriorityQueue<Long>();
-        pendingOrderList = new ArrayList<Long>();
+        pendingOrderList = new PriorityQueue<Long>();
 
         int count = 0;
 
@@ -105,7 +114,7 @@ public class DeliveryService {
         
     }
     
-    public Boolean requestOrder(Long custId, Long restId, Long itemId, Long qty) {
+    public ResponseEntity<String> requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
         Long totalPrice=(long)0;
 
@@ -122,7 +131,7 @@ public class DeliveryService {
       WebClient client =  WebClient.create("http://localhost:8082");
       WalletRequest payload = new WalletRequest(custId, totalPrice)  ;  
       Mono<ResponseEntity<String>> retvalue = client.post()
-      .uri("/addBalance")
+      .uri("/deductBalance")
       .contentType(MediaType.APPLICATION_JSON)
       .body(Mono.just(payload), WalletRequest.class)
       .retrieve()
@@ -131,15 +140,117 @@ public class DeliveryService {
 
        ResponseEntity<String> walletResponse = retvalue.block();
        System.out.println(walletResponse.getStatusCode());
-       return true;
+
+       if (walletResponse.getStatusCode() == HttpStatus.CREATED) {
+            System.out.println("Wallet amount deducted");
+
+            WebClient restaurantClient =  WebClient.create("http://localhost:8081");
+            OrderRequest orderPayload = new OrderRequest(restId, itemId, qty)  ;  
+            Mono<ResponseEntity<String>> restaurantReturnValue = restaurantClient.post()
+            .uri("/acceptOrder")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Mono.just(orderPayload), OrderRequest.class)
+            .retrieve()
+            .toEntity(String.class);
+  
+
+            ResponseEntity<String> restaurantResponse = restaurantReturnValue .block();
+            System.out.println(restaurantResponse.getStatusCode());
+
+            if (restaurantResponse.getStatusCode() == HttpStatus.CREATED) {
+                System.out.println("Order Accepted");
+
+                if (availableAgents.size() > 0) {
+
+                    long assignedAgent = availableAgents.poll();
+
+                    Order currentOrder = new Order(custId, restId, itemId, qty);
+                    currentOrder.setOrderId(currentOrderId);
+                    currentOrder.setAgentId(assignedAgent);
+                    currentOrder.setStatus(1); //assigned
+
+                    orderHistory.put(currentOrderId, currentOrder);
+
+                    //currentOrderId++;
+
+                    agentStatus.put(assignedAgent, UNAVAILABLE);
+
+
+                } else {
+
+                    Order currentOrder = new Order(custId, restId, itemId, qty);
+                    currentOrder.setOrderId(currentOrderId);
+                    currentOrder.setStatus(0); //Unassigned
+
+                    orderHistory.put(currentOrderId, currentOrder);
+
+                    pendingOrderList.add(currentOrderId);
+
+                    //currentOrderId++;
+
+                }
+
+                return new ResponseEntity<String>("{ \"orderId\": "+ String.valueOf(currentOrderId++) + "}", HttpStatus.CREATED); //Return order id also
+
+            } else {
+
+                client =  WebClient.create("http://localhost:8082");
+                payload = new WalletRequest(custId, totalPrice)  ;  
+                retvalue = client.post()
+                .uri("/addBalance")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(payload), WalletRequest.class)
+                .retrieve()
+                .toEntity(String.class);
+            
+
+                walletResponse = retvalue.block();
+                System.out.println(walletResponse.getStatusCode());
+
+                return new ResponseEntity<String>("", HttpStatus.GONE);
+
+            }
+       }
+
+       else {
+        return new ResponseEntity<String>("", HttpStatus.GONE);
+       }
+       
     }
 
     public Boolean agentSignIn(Long agentId) {
+
+        if (agentStatus.get(agentId) == null || agentStatus.get(agentId) == SIGNED_OUT) {
+
+            if (pendingOrderList.size() > 0) {
+
+                Order currentOrder = orderHistory.get(pendingOrderList.poll());
+
+                currentOrder.setAgentId(agentId);
+                currentOrder.setStatus(1); //assigned
+
+                //orderHistory.put(currentOrderId, currentOrder);
+
+                agentStatus.put(agentId, UNAVAILABLE);
+                
+            } else {
+
+                agentStatus.put(agentId, AVAIALBLE);
+            }
+
+            
+
+        } 
 
         return true;
     }
 
     public Boolean agentSignOut(Long agentId) {
+
+        if (agentStatus.get(agentId) == AVAIALBLE) {
+
+            agentStatus.put(agentId, SIGNED_OUT);
+        }
 
         return true;
     }
@@ -147,6 +258,21 @@ public class DeliveryService {
     public Boolean orderDelivered(Long orderId) {
 
         return true;
+    }
+
+    public ResponseEntity<String> getAgentStatus(long agentId) {
+        int status = agentStatus.get(agentId);
+
+        if (status == AVAIALBLE) {
+
+            return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"available\"", HttpStatus.OK);
+
+        } else if (status == UNAVAILABLE) {
+            return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"unavailable\"", HttpStatus.OK);
+        } 
+        else {
+            return new ResponseEntity<String>("{ \"agentId\":" + String.valueOf(agentId) + ", \"status\": \"signed-out\"", HttpStatus.OK);
+        }
     }
 
 

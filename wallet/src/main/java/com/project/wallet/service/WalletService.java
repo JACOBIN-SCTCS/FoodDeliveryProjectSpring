@@ -20,7 +20,9 @@ public class WalletService
         List<Long> customers = new ArrayList<Long>(); 
 
         try{
-            File datafile = new File("/Users/depressedcoder/code/fooddelivery/initialData.txt");
+            String userDirectory = new File("").getAbsolutePath();
+            System.out.println(userDirectory);
+            File datafile = new File(userDirectory+ "/target/initialData.txt");
             Scanner myReader = new Scanner(datafile);
             int count = 0 ;
             String fourstar = new String("****");
