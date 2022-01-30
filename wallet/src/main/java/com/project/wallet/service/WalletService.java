@@ -22,7 +22,7 @@ public class WalletService
         try{
             String userDirectory = new File("").getAbsolutePath();
             System.out.println(userDirectory);
-            File datafile = new File(userDirectory+ "/target/initialData.txt");
+            File datafile = new File(userDirectory + "/initialData.txt");
             Scanner myReader = new Scanner(datafile);
             int count = 0 ;
             String fourstar = new String("****");

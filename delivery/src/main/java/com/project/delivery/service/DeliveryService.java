@@ -49,7 +49,7 @@ public class DeliveryService {
 
         String userDirectory = new File("").getAbsolutePath();
         System.out.println(userDirectory);
-        File file = new File(userDirectory+ "/target/initialData.txt");
+        File file = new File(userDirectory+ "/initialData.txt");
         Scanner sc = new Scanner(file);
         
         agentStatus = new HashMap<Long,Integer>();
