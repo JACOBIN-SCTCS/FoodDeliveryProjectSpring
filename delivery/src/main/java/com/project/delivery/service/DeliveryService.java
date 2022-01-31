@@ -147,7 +147,7 @@ public class DeliveryService {
        if (walletResponse.getStatusCode() == HttpStatus.CREATED) {
             System.out.println("Wallet amount deducted");
 
-            WebClient restaurantClient =  WebClient.create("http://localhost:8081");
+            WebClient restaurantClient =  WebClient.create("http://localhost:8080");
             OrderRequest orderPayload = new OrderRequest(restId, itemId, qty)  ;  
             Mono<ResponseEntity<String>> restaurantReturnValue = restaurantClient.post()
             .uri("/acceptOrder")
