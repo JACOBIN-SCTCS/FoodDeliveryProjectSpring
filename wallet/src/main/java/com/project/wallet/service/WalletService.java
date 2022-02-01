@@ -76,7 +76,7 @@ public class WalletService
     {
         if(wallet.containsKey(custId))
             wallet.put(custId, wallet.get(custId) + amount);
-        System.out.println("/addBalance  " + custId + "successful");
+        System.out.println("/addBalance  " + custId + " successful " + " New Balance = " + wallet.get(custId));
         return true;
     }
 
@@ -88,14 +88,14 @@ public class WalletService
             if(wallet.get(custId) < amount)
             {
                 /* Customers balance is less than the amount to be deducted */
-                System.out.println("/deductBalance " + custId + "Unsuccessful");
+                System.out.println("/deductBalance " + custId + "Unsuccessful Balance = " + wallet.get(custId));
                 return false;
             }
             else
             {
                 /* Perform Deduction */
 
-                System.out.println("/deductBalance " + custId + "Successful");
+                System.out.println(" /deductBalance " + custId + " Successful "+ " New Balance = " + wallet.get(custId));
                 wallet.put(custId, wallet.get(custId)-amount);
                 return true;
             }
