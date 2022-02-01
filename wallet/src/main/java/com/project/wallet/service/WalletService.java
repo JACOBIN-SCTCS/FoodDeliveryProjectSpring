@@ -26,7 +26,7 @@ public class WalletService
             String fourstar = new String("****");
             while (myReader.hasNextLine()) {
                 String data = myReader.nextLine();
-                if(data.equals(fourstar))
+                if(data.equals(fourstar)) /* Ignore reading the Item Catalogue */
                 {
                     count+=1;
                 }
@@ -37,12 +37,14 @@ public class WalletService
                         data = myReader.nextLine();
                         if(data.equals(fourstar))
                         {
+                            /* Get the Initial Balance for all customers*/
                             String walletAmountString = myReader.nextLine();
                             wallet_amount = Long.parseLong(walletAmountString);
                             break;
                         }
                         else
                         {
+                            /* Add customers to the temporary customers list */
                             customers.add(Long.parseLong(data));
                         }
                     }
@@ -59,7 +61,8 @@ public class WalletService
         if(customers.size()>0)
         {
             for(int i=0;i<customers.size();++i)
-            {
+            {   
+                /* Add all the customers along with their initial balance in a HashMap*/
                 wallet.put(customers.get(i), wallet_amount);
             }
             initialData.putAll(wallet);
@@ -84,11 +87,14 @@ public class WalletService
         {
             if(wallet.get(custId) < amount)
             {
+                /* Customers balance is less than the amount to be deducted */
                 System.out.println("/deductBalance " + custId + "Unsuccessful");
                 return false;
             }
             else
             {
+                /* Perform Deduction */
+
                 System.out.println("/deductBalance " + custId + "Successful");
                 wallet.put(custId, wallet.get(custId)-amount);
                 return true;
@@ -105,13 +111,13 @@ public class WalletService
     {
         if(!wallet.containsKey(custId))
         {
+            /* The customer ID is Invalid */
             System.out.println("/getData " + custId + " UnSuccessful");
             return null;
         }
         else
         {
-            //Wrap the customer data
-            //TransactionData txndata = new TransactionData(custId, wallet.get(custId));
+            /*Wrap the customer data*/
             CustomerWallet customerData = new CustomerWallet(custId, wallet.get(custId));
             System.out.println("/getData " + custId + " Successful");
             return customerData;
@@ -121,6 +127,7 @@ public class WalletService
     /* Reinitialize all the customers balance to their initialBalance*/
     public boolean reInitialize()
     {
+        /*Reinitialize the wallet hashmap to the initial balance*/
         wallet = new HashMap<>();
         wallet.putAll(initialData);
         System.out.println("/reInitialize Successful");
