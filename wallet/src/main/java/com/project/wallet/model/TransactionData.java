@@ -1,5 +1,8 @@
 package com.project.wallet.model;
-
+/*
+    Wrapper class for the deserializing the JSON payload on POST
+    requests to /addBalance, /deductBalance
+*/
 public class TransactionData
 {
     long custId;

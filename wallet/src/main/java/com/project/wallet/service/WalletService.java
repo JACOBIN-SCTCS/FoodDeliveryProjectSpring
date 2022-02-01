@@ -3,25 +3,23 @@ import java.io.File;
 import java.util.*;
 
 import com.project.wallet.model.CustomerWallet;
-import com.project.wallet.model.TransactionData;
 
 public class WalletService 
 {
 
     HashMap<Long,Long> wallet;
     HashMap<Long,Long> initialData;
-
+    
     public WalletService()
     {
         wallet = new HashMap<>();
         initialData = new HashMap<>();
         
         long wallet_amount = 0;
-        List<Long> customers = new ArrayList<Long>(); 
-
+        List<Long> customers = new ArrayList<Long>();  /* Temporary list to hold customer ids */
         try{
             String userDirectory = new File("").getAbsolutePath();
-            System.out.println(userDirectory);
+            //System.out.println(userDirectory);
             File datafile = new File(userDirectory + "/initialData.txt");
             Scanner myReader = new Scanner(datafile);
             int count = 0 ;
@@ -32,7 +30,7 @@ public class WalletService
                 {
                     count+=1;
                 }
-                if(count==2)
+                if(count==2) /* Start Reading Customer data */
                 {
                     while(myReader.hasNextLine())
                     {
@@ -66,26 +64,32 @@ public class WalletService
             }
             initialData.putAll(wallet);
         }
+        System.out.println("Customer Wallets Initialized");
+
     }
 
+    /* Adds amount to the wallet of customer whose customer id is custId */
     public boolean addBalance(long custId, long amount)
     {
         if(wallet.containsKey(custId))
             wallet.put(custId, wallet.get(custId) + amount);
-        System.out.println(wallet.get(custId));
+        System.out.println("/addBalance  " + custId + "successful");
         return true;
     }
 
+    /* Deducts amount from the wallet of customer whose customer id is custId */
     public boolean deductBalance(long custId, long amount)
     {
         if(wallet.containsKey(custId))
         {
             if(wallet.get(custId) < amount)
             {
+                System.out.println("/deductBalance " + custId + "Unsuccessful");
                 return false;
             }
             else
             {
+                System.out.println("/deductBalance " + custId + "Successful");
                 wallet.put(custId, wallet.get(custId)-amount);
                 return true;
             }
@@ -96,24 +100,30 @@ public class WalletService
         } 
     }
 
+     /* Obtain the balance information of customer custId */
     public CustomerWallet getData(long custId)
     {
         if(!wallet.containsKey(custId))
         {
+            System.out.println("/getData " + custId + " UnSuccessful");
             return null;
         }
         else
         {
-            TransactionData txndata = new TransactionData(custId, wallet.get(custId));
-            CustomerWallet customerData = new CustomerWallet(txndata.getCustId(), txndata.getAmount());
+            //Wrap the customer data
+            //TransactionData txndata = new TransactionData(custId, wallet.get(custId));
+            CustomerWallet customerData = new CustomerWallet(custId, wallet.get(custId));
+            System.out.println("/getData " + custId + " Successful");
             return customerData;
         }
     }
 
+    /* Reinitialize all the customers balance to their initialBalance*/
     public boolean reInitialize()
     {
         wallet = new HashMap<>();
         wallet.putAll(initialData);
+        System.out.println("/reInitialize Successful");
         return true;
 
     }

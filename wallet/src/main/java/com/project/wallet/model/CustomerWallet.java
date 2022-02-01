@@ -1,5 +1,7 @@
 package com.project.wallet.model;
-
+/*
+    Wrapper class for holding the JSON response for /balance/{num}
+*/
 public class CustomerWallet
 {
     long custId;
