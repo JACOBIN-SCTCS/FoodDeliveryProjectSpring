@@ -1,5 +1,6 @@
 package com.project.delivery.model;
 
+
 public class Order {
 
     public Long orderId, agentId, custId, restId, itemId, qty;
