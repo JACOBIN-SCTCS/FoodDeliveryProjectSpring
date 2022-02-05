@@ -13,6 +13,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class RestaurantService {
 
+    /*
+        resturantInventory : List containing items of the form  {ResturantId,ItemId,Quantity}
+        for storing the count of items in each resturant.
+    */
     List<RestaurantInventory> restaurantInventory;
 
     public void initialData() throws Exception {
@@ -54,6 +58,8 @@ public class RestaurantService {
             }
 
         }
+        System.out.println("Resturant Service Initialized");
+        sc.close();
             
     }
 
@@ -68,16 +74,26 @@ public class RestaurantService {
         }
         
     }
-
-    public Boolean acceptOrder(Long restId, Long itemId, Long qty) {
+  
+    public Boolean acceptOrder(Long restId, Long itemId, Long qty) 
+    {
+        /* 
+            Function taking the ResturantId along with the itemid and quantity
+            and tries to process the order by deducting the required quantity 
+            of items.
+        */
 
         for (RestaurantInventory item: restaurantInventory) {
 
             if (item.getRestId().equals(restId) && item.getItemId().equals(itemId)) {
                 
+                /* Check if sufficient Quantity of items is available */
                 if (item.getQty() >= qty) {
 
                     item.setQty(item.getQty() - qty);
+                    System.out.println("/acceptOrder Successful Remaining ItemId = " + 
+                    itemId + " ResturantId = " + restId + " Quantity = " + item.getQty()
+                    );
                     return true;
 
                 } else {
@@ -88,25 +104,38 @@ public class RestaurantService {
         return false;
     }
 
-    public Boolean fillItem(Long restId, Long itemId, Long qty) {
+    
+    public Boolean fillItem(Long restId, Long itemId, Long qty) 
+    {
+         /* 
+            Function for refilling item having itemId at resturant whose id is restId
+            by qty.
+        */
 
         for (RestaurantInventory item: restaurantInventory) {
 
             if (item.getRestId().equals(restId) && item.getItemId().equals(itemId)) {
-                
+                /* Increase the amount of items by qty*/
                 item.setQty(item.getQty() + qty);
+                System.out.println("/fillItem Successful ItemId = " + 
+                    itemId + " ResturantId = " + restId + " Quantity = " +  item.getQty()
+                );
                 return true;
             } 
         }
         return false;
     }
 
-    public Boolean reInitialize() {
+   
+    public Boolean reInitialize() 
+    {
+        /*
+            Reinitialize the catalogue of items available at resturants
+        */
 
         try {
             initialData();
         } catch (Exception e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 

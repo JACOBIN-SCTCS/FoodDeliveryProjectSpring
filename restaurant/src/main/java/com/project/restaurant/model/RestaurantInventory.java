@@ -1,6 +1,11 @@
 package com.project.restaurant.model;
 
-public class RestaurantInventory {
+public class RestaurantInventory 
+{
+    /*
+        Class used for deserializing the JSON payload send as a 
+        part of Post Request to /refillItem , /acceptOrder
+    */  
 
     public Long restId, itemId, qty, price;
 
