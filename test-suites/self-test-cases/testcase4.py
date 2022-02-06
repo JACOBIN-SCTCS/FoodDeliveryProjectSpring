@@ -50,4 +50,4 @@ def test():
 
 if __name__ == "__main__":
     test_result = test()
-    print("TEST unassigned_order_delivered : " + test_result)
+    print(test_result)

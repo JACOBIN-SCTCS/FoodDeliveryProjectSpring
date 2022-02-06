@@ -1,6 +1,7 @@
 from http import HTTPStatus
 import requests
 from helper.helper import *
+
 # Check if the lowest numbered order id is left
 # when there are 3 pending orders and 2 agents sign in
 # Assuming sufficient balance for all customers
@@ -86,4 +87,4 @@ def test():
 
 if __name__ == "__main__":
     test_result = test()
-    print("TEST least_order_left : " + test_result)
+    print(test_result)
