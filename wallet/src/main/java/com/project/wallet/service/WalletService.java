@@ -95,8 +95,9 @@ public class WalletService
             {
                 /* Perform Deduction */
 
-                System.out.println(" /deductBalance " + custId + " Successful "+ " New Balance = " + wallet.get(custId));
                 wallet.put(custId, wallet.get(custId)-amount);
+                System.out.println(" /deductBalance " + custId + " Successful "+ " New Balance = " + wallet.get(custId));
+
                 return true;
             }
         }

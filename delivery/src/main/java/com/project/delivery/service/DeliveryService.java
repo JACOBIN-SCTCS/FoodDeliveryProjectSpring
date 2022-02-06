@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import reactor.core.publisher.Mono;
 
@@ -148,10 +149,16 @@ public class DeliveryService {
         .contentType(MediaType.APPLICATION_JSON)
         .body(Mono.just(payload), WalletRequest.class)
         .retrieve()
-        .toEntity(String.class);
+        .toEntity(String.class)
+        .onErrorResume(WebClientResponseException.class,
+            ex -> ex.getRawStatusCode() ==  HttpStatus.GONE.value() ? Mono.empty() : Mono.empty());
     
 
         ResponseEntity<String> walletResponse = retvalue.block();
+        if(walletResponse==null)
+        {
+            return new ResponseEntity<String>("", HttpStatus.GONE);
+        }
         System.out.println(walletResponse.getStatusCode());
 
         // If balance is deducted from customer's wallet successfully
@@ -168,10 +175,28 @@ public class DeliveryService {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(Mono.just(orderPayload), OrderRequest.class)
                 .retrieve()
-                .toEntity(String.class);
+                .toEntity(String.class)
+                .onErrorResume(WebClientResponseException.class,
+                    ex -> ex.getRawStatusCode() == HttpStatus.GONE.value() ? Mono.empty() : Mono.empty());
     
 
                 ResponseEntity<String> restaurantResponse = restaurantReturnValue .block();
+                if(restaurantResponse==null)
+                {
+                    client =  WebClient.create("http://localhost:8082");
+                    payload = new WalletRequest(custId, totalPrice)  ;  
+                    retvalue = client.post()
+                    .uri("/addBalance")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Mono.just(payload), WalletRequest.class)
+                    .retrieve()
+                    .toEntity(String.class);
+                
+                    walletResponse = retvalue.block();
+                    System.out.println(walletResponse.getStatusCode());
+
+                    return new ResponseEntity<String>("", HttpStatus.GONE);
+                }
                 System.out.println(restaurantResponse.getStatusCode());
 
                 // If order gets accepted by the restaurant service successfully
