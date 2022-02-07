@@ -2,7 +2,7 @@ from http import HTTPStatus
 import requests
 from helper.helper import *
 
-# Check if the status of unassigned order
+# Check if the status of an unassigned order
 # is unassigned even after calling the /orderDelivered endpoint
 
 

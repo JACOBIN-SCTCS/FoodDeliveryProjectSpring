@@ -1,7 +1,4 @@
 from http import HTTPStatus
-import http
-from urllib import response
-from pyparsing import null_debug_action
 import requests
 
 #  Check if a customer can make an order to a resturant
@@ -59,7 +56,7 @@ def test():
     if(http_response.status_code != HTTPStatus.CREATED):
         test_result = Fail
 
-    # Let customer 301 make an order with insufficient balance.
+    # Let customer 301 make an order with sufficient balance.
     http_response = requests.post("http://localhost:8081/requestOrder",json={
         "custId" : 301,
         "restId" : 101,

@@ -1,10 +1,10 @@
 from http import HTTPStatus
 import requests
 from helper.helper import *
-# Check if the lowest numbered order id is left
-# when there are 3 pending orders and 2 agents sign in
-# Assuming sufficient balance for all customers
 
+# Check if the agentId field in JSON response of OrderStatus is correct in the scenarios
+# 1. An agent has not been assigned to an order
+# 2. The available agent having lowest id is assigned to the order.
 
 Pass = 'Pass'
 Fail = 'Fail'
@@ -35,50 +35,35 @@ def test():
     if status==False:
         return Fail
 
-    # Customer 302 makes an order
-    test_result,order_id2 = createOrder(302,101)
-    if(test_result==Fail):
-        return Fail
-
-    #Check the order created by 302 is unassigned
-    status = checkOrderStatus(order_id2,"unassigned")
-    if status==False:
+    # Check if the agentId field is -1 for an unassigned order
+    status = checkOrderAssignedAgent(order_id1,-1)
+    if status  == False:
         return Fail
     
 
-    # Customer 303 makes an order
-    test_result,order_id3 = createOrder(303,101)
-    if(test_result==Fail):
-        return Fail
+    agent1 = 201
+    agent2 = 202
+    # Agent 201 signs in 
+    http_response = requests.post(
+        "http://localhost:8081/agentSignIn", json={"agentId": agent2})
 
-    #Check the order created by 303 is unassigned
+    #Agent 202 signs in
+    http_response = requests.post(
+        "http://localhost:8081/agentSignIn", json={"agentId": agent1})
     
-    status = checkOrderStatus(order_id3,"unassigned")
-    if status==False:
-        return Fail
-
-    http_response = requests.post(
-        "http://localhost:8081/agentSignIn", json={"agentId": 201})
-
-    result = checkAgentStatus(201,"unavailable")
-    if result==False:
-        return Fail
-
-    http_response = requests.post(
-        "http://localhost:8081/agentSignIn", json={"agentId": 202})
-    if result==False:
-        return Fail
-
+    # Check the status of the order must be assigned as agents signed in
     status = checkOrderStatus(order_id1,"assigned")
     if status==False:
         return Fail
     
-    status = checkOrderStatus(order_id2,"assigned")
-    if status==False:
+    # The agent assigned to the new order must be 202 as he signed in first
+    status = checkOrderAssignedAgent(order_id1,agent2)
+    if status  == False:
         return Fail
-
-    status = checkOrderStatus(order_id3,"unassigned")
-    if status==False:
+    
+    # The status of 201 must be available
+    status = checkAgentStatus(agent1,"available")
+    if status == False:
         return Fail
 
     return test_result

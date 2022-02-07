@@ -46,3 +46,14 @@ def checkAgentStatus(agentId,status):
     if agentStatus!=status:
         return False
     return True    
+
+def checkOrderAssignedAgent(orderId,agentId):
+    http_response = requests.get(f"http://localhost:8081/order/{orderId}")
+    if(http_response.status_code!=HTTPStatus.OK):
+        return False
+    
+    agentAssigned = http_response.json().get("agentId")
+    if(agentAssigned!=agentId):
+        return False
+    return True
+

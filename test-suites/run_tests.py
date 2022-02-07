@@ -12,9 +12,9 @@ if(choice.isnumeric):
     choice = int(choice)
     if choice == 1 or choice==2:
         if choice == 1:
-            os.chdir("test-suites/public-test-cases")
+            os.chdir("public-test-cases")
         else:
-            os.chdir("test-suites/self-test-cases")
+            os.chdir("self-test-cases")
         files = os.listdir()
         for f in files:
             if(f.endswith(".py")):
