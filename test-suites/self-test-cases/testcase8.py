@@ -31,7 +31,7 @@ def test():
     if(test_result==Fail):
         return Fail
 
-    #Customer 301 again makes an order for a total price of Rs.230
+    #Customer 301 again makes an order for a total price of Rs.230, which is more than his current balance
     test_result,order_id2 = createOrderForWallet(301,101,1)
     if(test_result==Fail):
         return Fail
@@ -41,7 +41,7 @@ def test():
     if(http_response.status_code != HTTPStatus.CREATED):
         test_result = Fail
 
-    #Customer 301 makes an order for a total price of Rs.1800
+    #Customer 301 makes an order for a total price of Rs.1800 but only quantities of item remaining 
     test_result,order_id1 = createOrderForReinitialise(301,101,9)
     if(test_result==Fail):
         return Fail

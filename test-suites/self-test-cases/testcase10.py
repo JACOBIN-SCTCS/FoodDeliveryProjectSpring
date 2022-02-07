@@ -27,22 +27,22 @@ def test():
     if(http_response.status_code != HTTPStatus.CREATED):
         test_result = Fail
 
-    #Customer 301 makes an order for a total price of Rs.1800
+    #Customer 301 makes an order for a total price of Rs.1800 and depletes the item completely
     test_result,order_id1 = createOrderForDepletion(301,101,10)
     if(test_result==Fail):
         return Fail
 
-    #Customer 302 again makes an order for a total price of Rs.360
+    #Customer 302 makes the order for the depleted item
     test_result,order_id2 = createOrderForWallet(302,101,2)
     if(test_result==Fail):
         return Fail
 
-    #Reinitialise the wallet service
+    #Refill 2 quantities of the item 
     test_result = refillItem(101,1,2)
     if(test_result==Fail):
         return Fail
 
-    #Customer 302 again makes an order for a total price of Rs.360
+    #Customer 302 again makes an order for 2 quantities of the item
     test_result,order_id2 = createOrderForWallet(302,101,2)
     if(test_result==Fail):
         return Fail

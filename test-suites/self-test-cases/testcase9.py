@@ -31,7 +31,7 @@ def test():
     if(test_result==Fail):
         return Fail
 
-    #Customer 301 makes an order for a total price of Rs.1840
+    #Customer 301 places an order for a total price of Rs.1840
     test_result,order_id1 = createOrderForWallet(301,101,8)
     if(test_result==Fail):
         return Fail
