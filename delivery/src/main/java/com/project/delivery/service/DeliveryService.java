@@ -140,7 +140,7 @@ public class DeliveryService {
         }
 
         // Sending request to WALLET Service to Deduct order's price from the customer's balance
-        WebClient client =  WebClient.create("http://localhost:8082");
+        WebClient client =  WebClient.create("http://host.docker.internal:8082");
         WalletRequest payload = new WalletRequest(custId, totalPrice);  
 
         Mono<ResponseEntity<String>> retvalue = client.post()
@@ -161,7 +161,7 @@ public class DeliveryService {
                 
                 // Sending request to RESTAURANT Service to check is order can be placed
 
-                WebClient restaurantClient =  WebClient.create("http://localhost:8080");
+                WebClient restaurantClient =  WebClient.create("http://host.docker.internal:8080");
                 OrderRequest orderPayload = new OrderRequest(restId, itemId, qty)  ;  
                 Mono<ResponseEntity<String>> restaurantReturnValue = restaurantClient.post()
                 .uri("/acceptOrder")
@@ -224,7 +224,7 @@ public class DeliveryService {
                     // Order is not accepted by restaurant service
                     // Restore order's price to Customer's wallet
 
-                    client =  WebClient.create("http://localhost:8082");
+                    client =  WebClient.create("http://host.docker.internal:8082");
                     payload = new WalletRequest(custId, totalPrice)  ;  
                     retvalue = client.post()
                     .uri("/addBalance")
