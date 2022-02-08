@@ -183,7 +183,7 @@ public class DeliveryService {
                 ResponseEntity<String> restaurantResponse = restaurantReturnValue .block();
                 if(restaurantResponse==null)
                 {
-                    client =  WebClient.create("http://localhost:8082");
+                    client =  WebClient.create("http://host.docker.internal:8082");
                     payload = new WalletRequest(custId, totalPrice)  ;  
                     retvalue = client.post()
                     .uri("/addBalance")

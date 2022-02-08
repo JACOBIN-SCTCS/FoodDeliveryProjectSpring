@@ -1,6 +1,13 @@
 Steps to run the services
 ###########################
 
+    Additional Dependency Used in pom.xml apart from Spring Web (Delivery Service)
+        WebClient:  
+            <dependency>
+    		    <groupId>org.springframework.boot</groupId>
+    		    <artifactId>spring-boot-starter-webflux</artifactId>
+		    </dependency>
+
     (The path to /initialData.txt in host is taken as ~/Downloads/initialData.txt)
 
     Restaurant Service 
