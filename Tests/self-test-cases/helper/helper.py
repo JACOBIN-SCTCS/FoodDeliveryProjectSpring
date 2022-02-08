@@ -94,9 +94,6 @@ def createOrderForReinitialise(customerid,restid, qty = 1):
     if(http_response.status_code == HTTPStatus.CREATED and qty == 2):
         test_result = Fail
         return(Fail,-1)
-    orderid = http_response.json().get("orderId")
-    if(orderid==-1):
-        return(Fail,-1)
     
     return (test_result,orderid)
 
