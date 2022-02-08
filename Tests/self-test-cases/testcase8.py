@@ -41,12 +41,12 @@ def test():
     if(http_response.status_code != HTTPStatus.CREATED):
         test_result = Fail
 
-    #Customer 301 makes an order for a total price of Rs.1800 but only quantities of item remaining 
+    #Customer 301 makes an order for 9 quantities of an item and a total price of Rs.1800 
     test_result,order_id1 = createOrderForReinitialise(301,101,9)
     if(test_result==Fail):
         return Fail
 
-    #Customer 301 makes an order for a total price of Rs.360
+    #Customer 301 makes an order for 2 quantities of the same item but only 1 quantity of item remaining 
     test_result,order_id1 = createOrderForReinitialise(302,101,2)
     if(test_result==Fail):
         return Fail
@@ -56,7 +56,7 @@ def test():
     if(http_response.status_code != HTTPStatus.CREATED):
         test_result = Fail
 
-    #Customer 302 makes an order for a total price of Rs.1800
+    #Customer 302 makes an order for 8 quantites of the same item
     test_result,order_id1 = createOrderForReinitialise(302,101,8)
     if(test_result==Fail):
         return Fail
