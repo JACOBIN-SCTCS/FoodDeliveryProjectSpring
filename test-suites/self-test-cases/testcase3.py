@@ -1,7 +1,7 @@
 from http import HTTPStatus
 import requests
 
-#  Check if a customer can make an order to a resturant
+#  Check if a customer can make an order to a restaurant
 #  after certain amounts of money gets credited to his wallet.
 
 Pass = 'Pass'

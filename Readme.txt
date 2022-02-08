@@ -3,7 +3,7 @@ Steps to run the services
 
     (The path to /initialData.txt in host is taken as ~/Downloads/initialData.txt)
 
-    Resturant Service 
+    Restaurant Service 
         1) cd Restaurant
         2) ./mvnw package
         3) docker build -t restaurant-service .
