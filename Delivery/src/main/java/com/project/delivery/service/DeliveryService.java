@@ -411,7 +411,7 @@ public class DeliveryService {
     public void reInitialize() {
 
         // Clears all in-memory data structures (state)
-
+        currentOrderId = INITIAL_ORDER_ID;
         orderHistory.clear();
         agentStatus.replaceAll((K,V) -> V =SIGNED_OUT);
         pendingOrderList.clear();
