@@ -7,13 +7,21 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+
+import com.project.delivery.entities.RestaurantEntity;
 import com.project.delivery.model.DeliveryAgent;
 import com.project.delivery.model.Item;
 import com.project.delivery.model.Order;
 import com.project.delivery.model.OrderRequest;
 import com.project.delivery.model.OrderStatus;
 import com.project.delivery.model.WalletRequest;
+import com.project.delivery.repositories.AgentsRepository;
+import com.project.delivery.repositories.RestaurantRepository;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +57,12 @@ public class DeliveryService {
     PriorityQueue<Long> pendingOrderList;
     HashMap<Long, Order> orderHistory; 
 
+    @Autowired
+    public AgentsRepository agentsRepository;
+    public RestaurantRepository restaurantRepository;
+
+    @Autowired
+    public EntityManager em;
 
     long currentOrderId = INITIAL_ORDER_ID;
 
@@ -98,6 +112,8 @@ public class DeliveryService {
                     qty    = Long.parseLong(splited2[2]);
                     
                     Item item = new Item(restId, itemId, price);
+                    RestaurantEntity entity = new RestaurantEntity(restId,itemId,price);
+                    this.restaurantRepository.save(entity);
                     itemList.add(item);
                     
                     
@@ -115,7 +131,9 @@ public class DeliveryService {
     }
 
     // Constructor for Delivery Service that initialises the In-Memory data structures
-    public DeliveryService() {
+    public DeliveryService(AgentsRepository agentsRepository, RestaurantRepository restaurantRepository) {
+        this.agentsRepository =agentsRepository;
+        this.restaurantRepository = restaurantRepository;
         try {
             initializeData();
         } catch (Exception e) {
@@ -141,7 +159,7 @@ public class DeliveryService {
         }
 
         // Sending request to WALLET Service to Deduct order's price from the customer's balance
-        WebClient client =  WebClient.create("http://host.docker.internal:8082");
+        WebClient client =  WebClient.create("http://localhost:8082");
         WalletRequest payload = new WalletRequest(custId, totalPrice);  
 
         Mono<ResponseEntity<String>> retvalue = client.post()
@@ -168,7 +186,7 @@ public class DeliveryService {
                 
                 // Sending request to RESTAURANT Service to check is order can be placed
 
-                WebClient restaurantClient =  WebClient.create("http://host.docker.internal:8080");
+                WebClient restaurantClient =  WebClient.create("http://localhost:8080");
                 OrderRequest orderPayload = new OrderRequest(restId, itemId, qty)  ;  
                 Mono<ResponseEntity<String>> restaurantReturnValue = restaurantClient.post()
                 .uri("/acceptOrder")
@@ -183,7 +201,7 @@ public class DeliveryService {
                 ResponseEntity<String> restaurantResponse = restaurantReturnValue .block();
                 if(restaurantResponse==null)
                 {
-                    client =  WebClient.create("http://host.docker.internal:8082");
+                    client =  WebClient.create("http://localhost:8082");
                     payload = new WalletRequest(custId, totalPrice)  ;  
                     retvalue = client.post()
                     .uri("/addBalance")
@@ -249,7 +267,7 @@ public class DeliveryService {
                     // Order is not accepted by restaurant service
                     // Restore order's price to Customer's wallet
 
-                    client =  WebClient.create("http://host.docker.internal:8082");
+                    client =  WebClient.create("http://localhost:8082");
                     payload = new WalletRequest(custId, totalPrice)  ;  
                     retvalue = client.post()
                     .uri("/addBalance")

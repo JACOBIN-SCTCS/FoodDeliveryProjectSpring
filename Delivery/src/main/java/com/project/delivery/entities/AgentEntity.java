@@ -10,7 +10,7 @@ public class AgentEntity {
     
     @Id
     @Column(name = "agentId")
-    int agentId;
+    Long agentId;
     @Column(name = "status")
     int status;
 
@@ -18,16 +18,16 @@ public class AgentEntity {
     {
 
     }
-    AgentEntity(int agentId, int status)
+    AgentEntity(Long agentId, int status)
     {
         this.agentId = agentId;
         this.status = status;
     }
-    public int getAgentId() {
+    public Long getAgentId() {
         return this.agentId;
     }
 
-    public void setAgentId(int agentId) {
+    public void setAgentId(Long agentId) {
         this.agentId = agentId;
     }
 

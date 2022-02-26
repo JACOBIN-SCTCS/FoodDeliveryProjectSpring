@@ -1,11 +1,13 @@
 package com.project.delivery.entities;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 
+@Entity
 public class RestaurantEntity 
 {
 
@@ -15,17 +17,17 @@ public class RestaurantEntity
     int id;
 
     @Column(name = "restId")
-    int restId;
+    Long restId;
     @Column(name = "itemId")
-    int itemId;
+    Long itemId;
     @Column(name = "price")
-    int price;
+    Long price;
 
     public RestaurantEntity()
     {
 
     }
-    public RestaurantEntity(int restId, int itemId, int price)
+    public RestaurantEntity(Long restId, Long itemId, Long price)
     {
         this.restId = restId;
         this.itemId = itemId;
@@ -39,27 +41,27 @@ public class RestaurantEntity
         this.id = id;
     }
 
-    public int getRestId() {
+    public Long getRestId() {
         return this.restId;
     }
 
-    public void setRestId(int restId) {
+    public void setRestId(Long restId) {
         this.restId = restId;
     }
 
-    public int getItemId() {
+    public Long getItemId() {
         return this.itemId;
     }
 
-    public void setItemId(int itemId) {
+    public void setItemId(Long itemId) {
         this.itemId = itemId;
     }
 
-    public int getPrice() {
+    public Long getPrice() {
         return this.price;
     }
 
-    public void setPrice(int price) {
+    public void setPrice(Long price) {
         this.price = price;
     }
 
