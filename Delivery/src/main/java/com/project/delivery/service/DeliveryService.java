@@ -9,8 +9,12 @@ import java.util.Scanner;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.LockModeType;
 import javax.persistence.Persistence;
+import javax.transaction.Transactional;
 
+import com.project.delivery.entities.AgentEntity;
+import com.project.delivery.entities.OrderHistory;
 import com.project.delivery.entities.RestaurantEntity;
 import com.project.delivery.model.DeliveryAgent;
 import com.project.delivery.model.Item;
@@ -19,6 +23,7 @@ import com.project.delivery.model.OrderRequest;
 import com.project.delivery.model.OrderStatus;
 import com.project.delivery.model.WalletRequest;
 import com.project.delivery.repositories.AgentsRepository;
+import com.project.delivery.repositories.OrderHistoryRepository;
 import com.project.delivery.repositories.RestaurantRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,11 +60,16 @@ public class DeliveryService {
     HashMap<Long,Integer> agentStatus;
     PriorityQueue<Long> availableAgents;
     PriorityQueue<Long> pendingOrderList;
-    HashMap<Long, Order> orderHistory; 
+    HashMap<Long, Order> orderHist; 
 
     @Autowired
     public AgentsRepository agentsRepository;
+
+    @Autowired
     public RestaurantRepository restaurantRepository;
+
+    @Autowired
+    public OrderHistoryRepository orderHistoryRepository;
 
     @Autowired
     public EntityManager em;
@@ -80,7 +90,7 @@ public class DeliveryService {
         agentStatus = new HashMap<Long,Integer>();
         availableAgents = new PriorityQueue<Long>();
         pendingOrderList = new PriorityQueue<Long>();
-        orderHistory = new HashMap<>();
+        orderHist = new HashMap<>();
         
         int count = 0;
 
@@ -236,7 +246,7 @@ public class DeliveryService {
                         currentOrder.setStatus(ORDER_ASSIGNED); 
 
                         // Records the order in the order history
-                        orderHistory.put(currentOrderId, currentOrder);
+                        orderHist.put(currentOrderId, currentOrder);
 
                         // Sets the agent status to Unavailable
                         agentStatus.put(assignedAgent, UNAVAILABLE);
@@ -252,7 +262,7 @@ public class DeliveryService {
                         currentOrder.setAgentId(-1l);
 
                         // Records the order in the order history
-                        orderHistory.put(currentOrderId, currentOrder);
+                        orderHist.put(currentOrderId, currentOrder);
 
                         // Adds the current order to pending order list
                         pendingOrderList.add(currentOrderId);
@@ -301,7 +311,7 @@ public class DeliveryService {
 
                 // Assign the agent to the order with smallest order id
 
-                Order currentOrder = orderHistory.get(pendingOrderList.poll());
+                Order currentOrder = orderHist.get(pendingOrderList.poll());
 
                 currentOrder.setAgentId(agentId);
                 currentOrder.setStatus(ORDER_ASSIGNED); 
@@ -340,7 +350,7 @@ public class DeliveryService {
 
         System.out.println("Order ID" + orderId );
 
-        Order order  = orderHistory.getOrDefault(orderId,null);
+        Order order  = orderHist.getOrDefault(orderId,null);
 
         if(order==null || order.getStatus() != ORDER_ASSIGNED)  {
                System.out.println("Invalid order");
@@ -350,19 +360,19 @@ public class DeliveryService {
         System.out.println(order.getOrderId());
 
         order.setStatus(ORDER_DELIVERED);
-        orderHistory.put(orderId, order);
+        orderHist.put(orderId, order);
         Long agentId = order.getAgentId();
         agentStatus.put(agentId, AVAILABLE);
 
         // If there are unassigned order, finds an agent for it
         if (pendingOrderList.size() > 0) {
 
-            Order currentOrder = orderHistory.get(pendingOrderList.poll());
+            Order currentOrder = orderHist.get(pendingOrderList.poll());
 
             currentOrder.setAgentId(agentId);
             currentOrder.setStatus(ORDER_ASSIGNED); 
 
-            //orderHistory.put(currentOrderId, currentOrder);
+            //orderHist.put(currentOrderId, currentOrder);
 
             agentStatus.put(agentId, UNAVAILABLE);
 
@@ -379,14 +389,20 @@ public class DeliveryService {
     }
     
     // Function that handles getorderStatus endpoint
+    @Transactional
     public ResponseEntity<OrderStatus> getOrderStatus(long orderId) {
 
         // If order id is not found in the order history
-        if(!orderHistory.containsKey(orderId))
+        OrderHistory hist = this.em.find(OrderHistory.class, orderId,LockModeType.PESSIMISTIC_READ);
+        if(hist==null)
+        {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        //if(!orderHist.containsKey(orderId))
+        //    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        //Order order = orderHist.get(orderId);
 
-        Order order = orderHistory.get(orderId);
-        int orderstatus = order.getStatus();
+        int orderstatus = hist.getAssigned();
         OrderStatus status = new OrderStatus(orderId);
 
         if(orderstatus==ORDER_UNASSIGNED) {
@@ -399,16 +415,19 @@ public class DeliveryService {
             status.setStatus(new String("delivered"));
         }
 
-        status.setAgentId(order.getAgentId());
+        status.setAgentId(hist.getAgentId());
 
         // Returns status of the given order id
         return new ResponseEntity<OrderStatus>(status,HttpStatus.OK);
     }
 
     // Function that handles getAgentStatus endpoint
+    @Transactional
     public ResponseEntity<DeliveryAgent> getAgentStatus(long agentId) {
 
-        int status = agentStatus.get(agentId);
+        //int status = agentStatus.get(agentId);
+        AgentEntity agentstatus = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_READ);  
+        int status = agentstatus.getStatus();
         DeliveryAgent agent = new DeliveryAgent(agentId);
         
         if (status == AVAILABLE) {
@@ -430,7 +449,7 @@ public class DeliveryService {
 
         // Clears all in-memory data structures (state)
         currentOrderId = INITIAL_ORDER_ID;
-        orderHistory.clear();
+        orderHist.clear();
         agentStatus.replaceAll((K,V) -> V =SIGNED_OUT);
         pendingOrderList.clear();
         availableAgents.clear();

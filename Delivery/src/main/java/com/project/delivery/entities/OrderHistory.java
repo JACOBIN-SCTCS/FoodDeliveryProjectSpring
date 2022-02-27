@@ -9,22 +9,22 @@ public class OrderHistory
 {
     @Id
     @Column(name = "orderId")
-    int orderId;
+    Long orderId;
 
     @Column(name = "restId")
-    int restId;
+    Long restId;
 
     @Column(name = "custId")
-    int custId;
+    Long custId;
     
     @Column(name = "itemId")
-    int itemId;
+    Long itemId;
 
     @Column(name="qty")
-    int qty;
+    Long qty;
     
     @Column(name = "agentId")
-    int agentId;
+    Long agentId;
 
     @Column(name = "assigned")
     int assigned;
@@ -33,7 +33,7 @@ public class OrderHistory
     {
 
     }
-    public OrderHistory(int orderId, int restId, int custId, int itemId, int qty, int agentId, int assigned)
+    public OrderHistory(Long orderId, Long restId, Long custId, Long itemId, Long qty, Long agentId, int assigned)
     {
         this.orderId = orderId;
         this.restId = restId;
@@ -43,51 +43,51 @@ public class OrderHistory
         this.agentId = agentId;
         this.assigned = assigned;
     }
-    public int getOrderId() {
+    public Long getOrderId() {
         return this.orderId;
     }
 
-    public void setOrderId(int orderId) {
+    public void setOrderId(Long orderId) {
         this.orderId = orderId;
     }
 
-    public int getRestId() {
+    public Long getRestId() {
         return this.restId;
     }
 
-    public void setRestId(int restId) {
+    public void setRestId(Long restId) {
         this.restId = restId;
     }
 
-    public int getCustId() {
+    public Long getCustId() {
         return this.custId;
     }
 
-    public void setCustId(int custId) {
+    public void setCustId(Long custId) {
         this.custId = custId;
     }
 
-    public int getItemId() {
+    public Long getItemId() {
         return this.itemId;
     }
 
-    public void setItemId(int itemId) {
+    public void setItemId(Long itemId) {
         this.itemId = itemId;
     }
 
-    public int getQty() {
+    public Long getQty() {
         return this.qty;
     }
 
-    public void setQty(int qty) {
+    public void setQty(Long qty) {
         this.qty = qty;
     }
 
-    public int getAgentId() {
+    public Long getAgentId() {
         return this.agentId;
     }
 
-    public void setAgentId(int agentId) {
+    public void setAgentId(Long agentId) {
         this.agentId = agentId;
     }
 
