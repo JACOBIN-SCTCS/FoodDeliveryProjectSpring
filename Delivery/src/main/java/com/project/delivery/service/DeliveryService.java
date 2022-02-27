@@ -445,6 +445,7 @@ public class DeliveryService {
     }
 
     // Reinitializes the data in the Delivery service
+    @Transactional
     public void reInitialize() {
 
         // Clears all in-memory data structures (state)

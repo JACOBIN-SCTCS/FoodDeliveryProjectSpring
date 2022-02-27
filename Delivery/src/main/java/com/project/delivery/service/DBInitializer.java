@@ -15,8 +15,10 @@ import com.project.delivery.entities.CurrentState;
 import com.project.delivery.entities.RestaurantEntity;
 import com.project.delivery.model.Item;
 import com.project.delivery.repositories.AgentsRepository;
+import com.project.delivery.repositories.OrderHistoryRepository;
 import com.project.delivery.repositories.RestaurantRepository;
 
+import org.hibernate.id.IntegralDataTypeHolder;
 import org.hibernate.type.TrueFalseType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,12 +32,15 @@ public class DBInitializer
 
     @Autowired
     RestaurantRepository restaurantRepository;
+
+    @Autowired
+    OrderHistoryRepository orderHistoryRepository;
     
     @PersistenceContext 
     private EntityManager em ;
 
     final int SIGNED_OUT    = 0;
-
+    List<Long> agents; 
 
     @Transactional
     public boolean initAllTables() throws Exception
@@ -44,12 +49,12 @@ public class DBInitializer
         System.out.println(userDirectory);
         File file = new File(userDirectory+ "/initialData.txt");
         Scanner sc = new Scanner(file);
-        
+        agents = new ArrayList<Long>();
         CurrentState appState = em.find(CurrentState.class, 1, LockModeType.PESSIMISTIC_WRITE);
         if(appState!=null)
         {
             sc.close();
-            return true;
+            return true;    
         }
         int count = 0;
 
@@ -92,6 +97,7 @@ public class DBInitializer
             else if (count == 1) {
                 //agentStatus.put(Long.parseLong(str), SIGNED_OUT);
                 AgentEntity entity = new AgentEntity(Long.parseLong(str),SIGNED_OUT);
+                agents.add(Long.parseLong(str));
                 this.agentsRepository.save(entity);
                 //this.em.persist();
             }
@@ -100,9 +106,26 @@ public class DBInitializer
             }
         }
         sc.close(); 
-        this.em.persist(new CurrentState(1,1));
+        this.em.persist(new CurrentState(1,1000));
         return true;
     }
-    
-    
+
+    @Transactional 
+    public boolean reinitTables()
+    {
+        CurrentState appState = em.find(CurrentState.class, 1, LockModeType.PESSIMISTIC_WRITE);
+        orderHistoryRepository.deleteAll();
+        agentsRepository.deleteAll();
+        for (int i=0;i<agents.size();++i)
+        {
+            AgentEntity entity = new AgentEntity(agents.get(i),SIGNED_OUT);
+            agentsRepository.save(entity);
+
+        }
+        appState.setValue(1000);
+        this.em.merge(appState);
+        this.em.flush();
+        return true;
+    }
+ 
 }

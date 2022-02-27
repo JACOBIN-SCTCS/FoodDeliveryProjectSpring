@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import com.project.delivery.service.DBInitializer;
 import com.project.delivery.service.DeliveryService;
 import com.project.delivery.model.DeliveryAgent;
 import com.project.delivery.model.Order;
@@ -21,6 +22,9 @@ class DeliveryController {
 
     @Autowired
     DeliveryService deliveryService;
+
+    @Autowired
+    DBInitializer dbInitializer;
 
     
     @PostMapping(path="/requestOrder",produces = "application/json",consumes="application/json")
@@ -67,6 +71,7 @@ class DeliveryController {
     @PostMapping("/reInitialize")
     ResponseEntity<String> reInitialize()
     {
+        dbInitializer.reinitTables();
         deliveryService.reInitialize();
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
