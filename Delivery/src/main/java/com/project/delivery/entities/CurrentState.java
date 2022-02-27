@@ -11,14 +11,14 @@ public class CurrentState
     @Column(name = "key")
     int key;
     @Column(name = "value")
-    int value;
+    Long value;
 
 	public CurrentState()
 	{
 
 	}
 
-	public CurrentState(int key, int value)
+	public CurrentState(int key, Long value)
 	{
 		this.key = key;
 		this.value = value;
@@ -31,11 +31,11 @@ public class CurrentState
 		this.key = key;
 	}
 
-	public int getValue() {
+	public Long getValue() {
 		return this.value;
 	}
 
-	public void setValue(int value) {
+	public void setValue(Long value) {
 		this.value = value;
 	}
 

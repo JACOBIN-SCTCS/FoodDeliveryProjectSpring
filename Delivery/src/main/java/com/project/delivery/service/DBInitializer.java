@@ -106,7 +106,7 @@ public class DBInitializer
             }
         }
         sc.close(); 
-        this.em.persist(new CurrentState(1,1000));
+        this.em.persist(new CurrentState(1,1000l));
         return true;
     }
 
@@ -122,7 +122,7 @@ public class DBInitializer
             agentsRepository.save(entity);
 
         }
-        appState.setValue(1000);
+        appState.setValue(1000l);
         this.em.merge(appState);
         this.em.flush();
         return true;
