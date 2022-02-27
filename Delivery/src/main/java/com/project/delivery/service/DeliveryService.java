@@ -302,7 +302,12 @@ public class DeliveryService {
 
     // Fuction that handles agentSignIn endpoint
     public Boolean agentSignIn(Long agentId) {
-
+        
+        List<AgentEntity> agents = this.agentsRepository.findByStatusOrderByAgentIdAsc(SIGNED_OUT);
+        for(int i=0;i<agents.size();++i)
+        {
+            System.out.println(agents.get(i).getAgentId());
+        }
         // If agent id is not present or if signed out
         if (agentStatus.get(agentId) == null || agentStatus.get(agentId) == SIGNED_OUT) {
 
