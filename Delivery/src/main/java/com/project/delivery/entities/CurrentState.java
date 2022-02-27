@@ -13,6 +13,16 @@ public class CurrentState
     @Column(name = "value")
     int value;
 
+	public CurrentState()
+	{
+
+	}
+
+	public CurrentState(int key, int value)
+	{
+		this.key = key;
+		this.value = value;
+	}
 	public int getKey() {
 		return this.key;
 	}

@@ -112,8 +112,8 @@ public class DeliveryService {
                     qty    = Long.parseLong(splited2[2]);
                     
                     Item item = new Item(restId, itemId, price);
-                    RestaurantEntity entity = new RestaurantEntity(restId,itemId,price);
-                    this.restaurantRepository.save(entity);
+                    //RestaurantEntity entity = new RestaurantEntity(restId,itemId,price);
+                    //this.restaurantRepository.save(entity);
                     itemList.add(item);
                     
                     

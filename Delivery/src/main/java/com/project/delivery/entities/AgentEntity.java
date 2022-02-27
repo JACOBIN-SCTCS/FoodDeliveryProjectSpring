@@ -14,11 +14,11 @@ public class AgentEntity {
     @Column(name = "status")
     int status;
 
-    AgentEntity()
+    public AgentEntity()
     {
 
     }
-    AgentEntity(Long agentId, int status)
+    public AgentEntity(Long agentId, int status)
     {
         this.agentId = agentId;
         this.status = status;
