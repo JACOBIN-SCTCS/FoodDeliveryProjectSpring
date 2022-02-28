@@ -119,7 +119,7 @@ public class DBInitializer
         for (int i=0;i<agents.size();++i)
         {
             AgentEntity entity = new AgentEntity(agents.get(i),SIGNED_OUT);
-            agentsRepository.save(entity);
+            this.agentsRepository.save(entity);
 
         }
         appState.setValue(1000l);

@@ -11,6 +11,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.LockModeType;
 import javax.persistence.Persistence;
+import javax.persistence.Query;
 import javax.transaction.Transactional;
 
 import com.project.delivery.entities.AgentEntity;
@@ -301,18 +302,19 @@ public class DeliveryService {
     }
 
     // Fuction that handles agentSignIn endpoint
+    @Transactional
     public Boolean agentSignIn(Long agentId) {
         
-        List<AgentEntity> agents = this.agentsRepository.findByStatusOrderByAgentIdAsc(SIGNED_OUT);
-        for(int i=0;i<agents.size();++i)
-        {
-            System.out.println(agents.get(i).getAgentId());
-        }
+        AgentEntity current_agent = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_WRITE);
+
         // If agent id is not present or if signed out
-        if (agentStatus.get(agentId) == null || agentStatus.get(agentId) == SIGNED_OUT) {
+        if (current_agent.getStatus() == SIGNED_OUT) {
+
+            Query query = em.createQuery("SELECT COUNT(*) FROM ORDER_HISTORY WHERE assigned = 0" );
+            Long unassignedOrders = (Long) query.getSingleResult();
 
             // If unassigned orders are present
-            if (pendingOrderList.size() > 0) {
+            if (unassignedOrders > 0) {
 
                 // Assign the agent to the order with smallest order id
 
@@ -338,13 +340,16 @@ public class DeliveryService {
     }
 
     // Fuction that handles agentSignOut endpoint
+    @Transactional
     public Boolean agentSignOut(Long agentId) {
 
-        // If agent status is available, then sets the status to signed out
-        if (agentStatus.get(agentId) == AVAILABLE) {
+        AgentEntity current_agent = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_WRITE);
 
-            agentStatus.put(agentId, SIGNED_OUT);
-            availableAgents.remove(agentId);
+        // If agent status is available, then sets the status to signed out
+        if (current_agent.getStatus() == AVAILABLE) {
+
+            current_agent.setStatus(SIGNED_OUT);
+            this.em.merge(current_agent);
         }
 
         return true;
