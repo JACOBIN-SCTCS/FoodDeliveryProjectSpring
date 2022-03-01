@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 
@@ -12,6 +13,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.LockModeType;
 import javax.persistence.Persistence;
 import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import javax.transaction.Transactional;
 
 import com.project.delivery.entities.AgentEntity;
@@ -27,6 +29,7 @@ import com.project.delivery.repositories.AgentsRepository;
 import com.project.delivery.repositories.OrderHistoryRepository;
 import com.project.delivery.repositories.RestaurantRepository;
 
+import org.aspectj.weaver.loadtime.Agent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -56,13 +59,6 @@ public class DeliveryService {
     //Initial Order Id
     final long INITIAL_ORDER_ID = 1000;
 
-
-    List<Item> itemList;
-    HashMap<Long,Integer> agentStatus;
-    PriorityQueue<Long> availableAgents;
-    PriorityQueue<Long> pendingOrderList;
-    HashMap<Long, Order> orderHist; 
-
     @Autowired
     public AgentsRepository agentsRepository;
 
@@ -77,97 +73,27 @@ public class DeliveryService {
 
     long currentOrderId = INITIAL_ORDER_ID;
 
-  
-    // Parses data from initialData.txt file
-    public void initializeData() throws Exception {
-
-        // Reads initialData.txt file
-        String userDirectory = new File("").getAbsolutePath();
-        System.out.println(userDirectory);
-        File file = new File(userDirectory+ "/initialData.txt");
-        Scanner sc = new Scanner(file);
-        
-        itemList = new ArrayList<Item>();
-        agentStatus = new HashMap<Long,Integer>();
-        availableAgents = new PriorityQueue<Long>();
-        pendingOrderList = new PriorityQueue<Long>();
-        orderHist = new HashMap<>();
-        
-        int count = 0;
-
-        while (sc.hasNextLine()) {
-
-            String str = sc.nextLine();
-            System.out.println(str);
-            String[] splited = str.split("\\s+");
-
-            if (splited[0].indexOf('*') > -1) {
-                count += 1;
-                continue;
-            }
-
-            if (count == 0) {
-                Long restId = Long.parseLong(splited[0]);
-                int restNum = Integer.parseInt(splited[1]);
-
-                for (int i = 0; i < restNum; i++) {
-
-                    String str2 = sc.nextLine();
-                    System.out.println(str2);
-                    String[] splited2 = str2.split("\\s+");
-                    
-                    Long itemId, price, qty;
-
-                    itemId = Long.parseLong(splited2[0]);
-                    price  = Long.parseLong(splited2[1]);
-                    qty    = Long.parseLong(splited2[2]);
-                    
-                    Item item = new Item(restId, itemId, price);
-                    //RestaurantEntity entity = new RestaurantEntity(restId,itemId,price);
-                    //this.restaurantRepository.save(entity);
-                    itemList.add(item);
-                    
-                    
-                }
-            
-            }
-            else if (count == 1) {
-                agentStatus.put(Long.parseLong(str), SIGNED_OUT);
-            }
-            else if (count >= 2) {
-                break;
-            }
-        }
-        sc.close(); 
-    }
-
     // Constructor for Delivery Service that initialises the In-Memory data structures
     public DeliveryService(AgentsRepository agentsRepository, RestaurantRepository restaurantRepository) {
+        
         this.agentsRepository =agentsRepository;
         this.restaurantRepository = restaurantRepository;
-        try {
-            initializeData();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         
     }
     
     // Function that handles requestOrder endpoint
+    @Transactional
     public ResponseEntity<String> requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
-        Long totalPrice = (long) 0;
-
         // Calculating total price for the given order
-        for (Item item: itemList) {
+        RestaurantEntity current_item = (RestaurantEntity) this.em.createQuery("SELECT t FROM RestaurantEntity t WHERE t.itemId = :value1 AND t.restId = :value2")
+                                                                .setParameter("value1", itemId)
+                                                                .setParameter("value2", restId)
+                                                                .getSingleResult();
 
-            if (item.getRestId().equals(restId) && item.getItemId().equals(itemId)) {
-                
-                totalPrice = item.getPrice() * qty;
-                break;
+        Long totalPrice = (long) current_item.getPrice() * qty;
 
-            } 
-        }
+        System.out.println("Total Price" + totalPrice);
 
         // Sending request to WALLET Service to Deduct order's price from the customer's balance
         WebClient client =  WebClient.create("http://localhost:8082");
@@ -213,7 +139,7 @@ public class DeliveryService {
                 if(restaurantResponse==null)
                 {
                     client =  WebClient.create("http://localhost:8082");
-                    payload = new WalletRequest(custId, totalPrice)  ;  
+                    payload = new WalletRequest(custId, totalPrice);  
                     retvalue = client.post()
                     .uri("/addBalance")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -233,42 +159,40 @@ public class DeliveryService {
 
                     System.out.println("Order Accepted");
 
+                    
+                    TypedQuery<AgentEntity> agent_query =  this.em.createQuery("SELECT t FROM AgentEntity t WHERE t.status = "+ AVAILABLE + " ORDER BY agentId ASC ", AgentEntity.class)
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
+
+                    List<AgentEntity> agent_result = agent_query.getResultList();
+
+                    AgentEntity unassigned_agent = agent_result.isEmpty() ? null : agent_result.get(0);
+                    
                     // If an Agent is available
-                    if (availableAgents.size() > 0) {
+                    if (unassigned_agent != null) {
 
                         // Assigns the agent with smallest id to the current order,
                         // Sets the order status to Assigned
 
-                        long assignedAgent = availableAgents.poll();
-
-                        Order currentOrder = new Order(custId, restId, itemId, qty);
-                        currentOrder.setOrderId(currentOrderId);
-                        currentOrder.setAgentId(assignedAgent);
-                        currentOrder.setStatus(ORDER_ASSIGNED); 
-
+                        OrderHistory currentOrder = new OrderHistory(currentOrderId, restId, custId, itemId, qty, unassigned_agent.getAgentId(), ORDER_ASSIGNED);
+                        
                         // Records the order in the order history
-                        orderHist.put(currentOrderId, currentOrder);
+                        this.em.merge(currentOrder);
+
 
                         // Sets the agent status to Unavailable
-                        agentStatus.put(assignedAgent, UNAVAILABLE);
+                        unassigned_agent.setStatus(UNAVAILABLE);
+                        this.em.merge(unassigned_agent);
 
 
                     } else {
-
                         // Sets the order status to Unassigned
 
-                        Order currentOrder = new Order(custId, restId, itemId, qty);
-                        currentOrder.setOrderId(currentOrderId);
-                        currentOrder.setStatus(ORDER_UNASSIGNED); 
-                        currentOrder.setAgentId(-1l);
+                        OrderHistory currentOrder = new OrderHistory(currentOrderId, restId, custId, itemId, qty, null, ORDER_ASSIGNED);
 
                         // Records the order in the order history
-                        orderHist.put(currentOrderId, currentOrder);
+                        this.em.merge(currentOrder);
 
-                        // Adds the current order to pending order list
-                        pendingOrderList.add(currentOrderId);
-
-                    }
+                    }    
 
                     // Returns order id with Http status 201
                     return new ResponseEntity<String>("{ \"orderId\": "+ String.valueOf(currentOrderId++) + "}", HttpStatus.CREATED); 
@@ -310,28 +234,62 @@ public class DeliveryService {
         // If agent id is not present or if signed out
         if (current_agent.getStatus() == SIGNED_OUT) {
 
-            Query query = em.createQuery("SELECT COUNT(*) FROM ORDER_HISTORY WHERE assigned = 0" );
-            Long unassignedOrders = (Long) query.getSingleResult();
+            TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
+                                                                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
+
+            List<OrderHistory> order_result = order_query.getResultList();
+
+            OrderHistory unassigned_order = order_result.isEmpty() ? null : order_result.get(0);
 
             // If unassigned orders are present
-            if (unassignedOrders > 0) {
+            if (unassigned_order != null) {
 
-                // Assign the agent to the order with smallest order id
+                TypedQuery<AgentEntity> agent_query =  this.em.createQuery("SELECT t FROM AgentEntity t WHERE t.status = "+ AVAILABLE + " ORDER BY agentId ASC ", AgentEntity.class)
+                                                                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
 
-                Order currentOrder = orderHist.get(pendingOrderList.poll());
+                List<AgentEntity> agent_result = agent_query.getResultList();
 
-                currentOrder.setAgentId(agentId);
-                currentOrder.setStatus(ORDER_ASSIGNED); 
-
-                // Sets agent status to unavailable
-                agentStatus.put(agentId, UNAVAILABLE);
+                AgentEntity unassigned_agent = agent_result.isEmpty() ? null : agent_result.get(0);
                 
+                // Assign the agent to the order with smallest order id
+                if (unassigned_agent == null || current_agent.getAgentId() < unassigned_agent.getAgentId()) {
+                    
+                    System.out.println("Agent null");
+
+                    // Sets agent status to unavailable
+                    current_agent.setStatus(UNAVAILABLE);
+
+                    unassigned_order.setAgentId(current_agent.getAgentId());
+                    unassigned_order.setAssigned(ORDER_ASSIGNED); 
+
+                    this.em.merge(current_agent);
+                    this.em.merge(unassigned_order);
+                
+                } else {
+
+                    /* Improve */
+                    // Sets agent status to unavailable
+                    AgentEntity assigning_agent = this.em.find(AgentEntity.class, unassigned_agent.getAgentId(), LockModeType.PESSIMISTIC_WRITE);
+                    assigning_agent.setStatus(UNAVAILABLE);
+
+                    unassigned_order.setAgentId(current_agent.getAgentId());
+                    unassigned_order.setAssigned(ORDER_ASSIGNED); 
+
+
+                    this.em.merge(assigning_agent);
+                    this.em.merge(unassigned_order);
+                    
+                    System.out.println("Agent id " + unassigned_agent.getAgentId() );
+                }                        
+                
+
             } else {
 
                 // Sets agent status to available
-                agentStatus.put(agentId, AVAILABLE);
-                availableAgents.add(agentId);
-            }            
+                current_agent.setStatus(AVAILABLE);
+
+                this.em.merge(current_agent);
+            }          
 
         } 
 
@@ -356,44 +314,46 @@ public class DeliveryService {
     }
 
     // Function that handles the orderDelivered endpoint
+    @Transactional
     public Boolean orderDelivered(Long orderId) {
 
         System.out.println("Order ID" + orderId );
 
-        Order order  = orderHist.getOrDefault(orderId,null);
+        OrderHistory order = this.em.find(OrderHistory.class, orderId, LockModeType.PESSIMISTIC_WRITE);
 
-        if(order==null || order.getStatus() != ORDER_ASSIGNED)  {
-               System.out.println("Invalid order");
-               return false;
+        if(order == null || order.getAssigned() != ORDER_ASSIGNED)  {
+
+            System.out.println("Invalid order");
+            return false;
         }
 
-        System.out.println(order.getOrderId());
+        order.setAssigned(ORDER_DELIVERED);
+        this.em.merge(order);
 
-        order.setStatus(ORDER_DELIVERED);
-        orderHist.put(orderId, order);
         Long agentId = order.getAgentId();
-        agentStatus.put(agentId, AVAILABLE);
+
+        
+        TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
+                                                                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
+
+        List<OrderHistory> order_result = order_query.getResultList();
+
+        OrderHistory unassigned_order = order_result.isEmpty() ? null : order_result.get(0);
 
         // If there are unassigned order, finds an agent for it
-        if (pendingOrderList.size() > 0) {
+        if (unassigned_order != null) {
 
-            Order currentOrder = orderHist.get(pendingOrderList.poll());
+            unassigned_order.setAgentId(agentId);
+            unassigned_order.setAssigned(ORDER_ASSIGNED); 
 
-            currentOrder.setAgentId(agentId);
-            currentOrder.setStatus(ORDER_ASSIGNED); 
-
-            //orderHist.put(currentOrderId, currentOrder);
-
-            agentStatus.put(agentId, UNAVAILABLE);
-
-            System.out.println("Agent" + agentId + "assigned to" + currentOrder.getOrderId());
+            System.out.println("Agent" + agentId + "assigned to" + unassigned_order.getOrderId());
             
-        }
+        } else {
+            AgentEntity current_agent = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_WRITE);
 
-        if (agentStatus.get(agentId) == AVAILABLE) {
-            availableAgents.add(agentId);
+            current_agent.setStatus(AVAILABLE);
+            this.em.merge(current_agent);
         }
-        
 
         return true;
     }
@@ -403,7 +363,8 @@ public class DeliveryService {
     public ResponseEntity<OrderStatus> getOrderStatus(long orderId) {
 
         // If order id is not found in the order history
-        OrderHistory hist = this.em.find(OrderHistory.class, orderId,LockModeType.PESSIMISTIC_READ);
+        OrderHistory hist = this.em.find(OrderHistory.class, orderId, LockModeType.PESSIMISTIC_READ);
+
         if(hist==null)
         {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -438,6 +399,7 @@ public class DeliveryService {
         //int status = agentStatus.get(agentId);
         AgentEntity agentstatus = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_READ);  
         int status = agentstatus.getStatus();
+
         DeliveryAgent agent = new DeliveryAgent(agentId);
         
         if (status == AVAILABLE) {
@@ -455,15 +417,7 @@ public class DeliveryService {
     }
 
     // Reinitializes the data in the Delivery service
-    @Transactional
-    public void reInitialize() {
 
-        // Clears all in-memory data structures (state)
-        currentOrderId = INITIAL_ORDER_ID;
-        orderHist.clear();
-        agentStatus.replaceAll((K,V) -> V =SIGNED_OUT);
-        pendingOrderList.clear();
-        availableAgents.clear();
-    }
+
 
 }

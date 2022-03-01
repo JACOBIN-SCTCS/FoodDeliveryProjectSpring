@@ -72,7 +72,9 @@ class DeliveryController {
     ResponseEntity<String> reInitialize()
     {
         dbInitializer.reinitTables();
-        deliveryService.reInitialize();
+
+        /* To remove */ deliveryService.reInitialize();
+        
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
