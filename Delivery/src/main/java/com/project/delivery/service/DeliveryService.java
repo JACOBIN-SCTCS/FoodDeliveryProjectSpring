@@ -17,6 +17,7 @@ import javax.persistence.TypedQuery;
 import javax.transaction.Transactional;
 
 import com.project.delivery.entities.AgentEntity;
+import com.project.delivery.entities.CurrentState;
 import com.project.delivery.entities.OrderHistory;
 import com.project.delivery.entities.RestaurantEntity;
 import com.project.delivery.model.DeliveryAgent;
@@ -26,6 +27,7 @@ import com.project.delivery.model.OrderRequest;
 import com.project.delivery.model.OrderStatus;
 import com.project.delivery.model.WalletRequest;
 import com.project.delivery.repositories.AgentsRepository;
+import com.project.delivery.repositories.CurrentStateRepository;
 import com.project.delivery.repositories.OrderHistoryRepository;
 import com.project.delivery.repositories.RestaurantRepository;
 
@@ -69,15 +71,23 @@ public class DeliveryService {
     public OrderHistoryRepository orderHistoryRepository;
 
     @Autowired
+    public CurrentStateRepository currentStateRepository;
+
+    @Autowired
     public EntityManager em;
 
     long currentOrderId = INITIAL_ORDER_ID;
 
     // Constructor for Delivery Service that initialises the In-Memory data structures
-    public DeliveryService(AgentsRepository agentsRepository, RestaurantRepository restaurantRepository) {
+    public DeliveryService(AgentsRepository agentsRepository, RestaurantRepository restaurantRepository,
+        OrderHistoryRepository orderHistoryRepository,
+        CurrentStateRepository currentStateRepository
+    ) {
         
         this.agentsRepository =agentsRepository;
         this.restaurantRepository = restaurantRepository;
+        this.orderHistoryRepository = orderHistoryRepository;
+        this.currentStateRepository = currentStateRepository;
         
     }
     
@@ -158,8 +168,6 @@ public class DeliveryService {
                 if (restaurantResponse.getStatusCode() == HttpStatus.CREATED) {
 
                     System.out.println("Order Accepted");
-
-                    
                     TypedQuery<AgentEntity> agent_query =  this.em.createQuery("SELECT t FROM AgentEntity t WHERE t.status = "+ AVAILABLE + " ORDER BY agentId ASC ", AgentEntity.class)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE);
 
@@ -172,25 +180,28 @@ public class DeliveryService {
 
                         // Assigns the agent with smallest id to the current order,
                         // Sets the order status to Assigned
-
-                        OrderHistory currentOrder = new OrderHistory(currentOrderId, restId, custId, itemId, qty, unassigned_agent.getAgentId(), ORDER_ASSIGNED);
-                        
+                        CurrentState orderIdState = em.find(CurrentState.class, 1,LockModeType.PESSIMISTIC_WRITE); 
+                        OrderHistory currentOrder = new OrderHistory(orderIdState.getValue(), restId, custId, itemId, qty, unassigned_agent.getAgentId(), ORDER_ASSIGNED);
+                        orderIdState.setValue(orderIdState.getValue()+1);
                         // Records the order in the order history
-                        this.em.merge(currentOrder);
+                        this.em.persist(currentOrder);
 
 
                         // Sets the agent status to Unavailable
                         unassigned_agent.setStatus(UNAVAILABLE);
                         this.em.merge(unassigned_agent);
+                        this.em.merge(orderIdState);
 
 
                     } else {
                         // Sets the order status to Unassigned
-
-                        OrderHistory currentOrder = new OrderHistory(currentOrderId, restId, custId, itemId, qty, null, ORDER_ASSIGNED);
+                        CurrentState orderIdState = em.find(CurrentState.class, 1,LockModeType.PESSIMISTIC_WRITE); 
+                        OrderHistory currentOrder = new OrderHistory(orderIdState.getValue(), restId, custId, itemId, qty, -1l, ORDER_UNASSIGNED);
+                        orderIdState.setValue(orderIdState.getValue()+1);
 
                         // Records the order in the order history
                         this.em.merge(currentOrder);
+                        this.em.merge(orderIdState);
 
                     }    
 
@@ -236,7 +247,6 @@ public class DeliveryService {
 
             TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
                                                                     .setLockMode(LockModeType.PESSIMISTIC_WRITE);
-
             List<OrderHistory> order_result = order_query.getResultList();
 
             OrderHistory unassigned_order = order_result.isEmpty() ? null : order_result.get(0);
@@ -415,9 +425,5 @@ public class DeliveryService {
         // Returns status of the given agent id
         return new ResponseEntity<>(agent, HttpStatus.OK);
     }
-
-    // Reinitializes the data in the Delivery service
-
-
 
 }
