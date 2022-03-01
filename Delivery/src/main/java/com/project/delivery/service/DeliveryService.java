@@ -33,6 +33,7 @@ import com.project.delivery.repositories.RestaurantRepository;
 
 import org.aspectj.weaver.loadtime.Agent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +61,8 @@ public class DeliveryService {
     
     //Initial Order Id
     final long INITIAL_ORDER_ID = 1000;
+    private String walleturl="http://kawinwallet:8080";
+    private String restauranturl="http://kawinrestaurant:8080";
 
     @Autowired
     public AgentsRepository agentsRepository;
@@ -106,7 +109,7 @@ public class DeliveryService {
         System.out.println("Total Price" + totalPrice);
 
         // Sending request to WALLET Service to Deduct order's price from the customer's balance
-        WebClient client =  WebClient.create("http://localhost:8082");
+        WebClient client =  WebClient.create(walleturl);
         WalletRequest payload = new WalletRequest(custId, totalPrice);  
 
         Mono<ResponseEntity<String>> retvalue = client.post()
@@ -133,7 +136,7 @@ public class DeliveryService {
                 
                 // Sending request to RESTAURANT Service to check is order can be placed
 
-                WebClient restaurantClient =  WebClient.create("http://localhost:8080");
+                WebClient restaurantClient =  WebClient.create(restauranturl);
                 OrderRequest orderPayload = new OrderRequest(restId, itemId, qty)  ;  
                 Mono<ResponseEntity<String>> restaurantReturnValue = restaurantClient.post()
                 .uri("/acceptOrder")
@@ -148,7 +151,7 @@ public class DeliveryService {
                 ResponseEntity<String> restaurantResponse = restaurantReturnValue .block();
                 if(restaurantResponse==null)
                 {
-                    client =  WebClient.create("http://localhost:8082");
+                    client =  WebClient.create(walleturl);
                     payload = new WalletRequest(custId, totalPrice);  
                     retvalue = client.post()
                     .uri("/addBalance")
@@ -213,7 +216,7 @@ public class DeliveryService {
                     // Order is not accepted by restaurant service
                     // Restore order's price to Customer's wallet
 
-                    client =  WebClient.create("http://localhost:8082");
+                    client =  WebClient.create(walleturl);
                     payload = new WalletRequest(custId, totalPrice)  ;  
                     retvalue = client.post()
                     .uri("/addBalance")
