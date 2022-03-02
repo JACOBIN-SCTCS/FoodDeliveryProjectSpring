@@ -22,14 +22,14 @@ public class WalletController
     }
 
     @PostMapping("/addBalance")
-    public ResponseEntity<String> addBalance(@RequestBody TransactionData txn)
+    public synchronized ResponseEntity<String> addBalance(@RequestBody TransactionData txn)
     {
         walletService.addBalance(txn.getCustId(), txn.getAmount());
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
     @PostMapping("/deductBalance")
-    public ResponseEntity<String> deductBalance(@RequestBody TransactionData txn)
+    public synchronized ResponseEntity<String> deductBalance(@RequestBody TransactionData txn)
     {
         boolean result = walletService.deductBalance(txn.getCustId(),txn.getAmount());
         
@@ -44,7 +44,7 @@ public class WalletController
     }
 
     @GetMapping("/balance/{num}")
-    public ResponseEntity<CustomerWallet> getBalance(@PathVariable int num)
+    public synchronized ResponseEntity<CustomerWallet> getBalance(@PathVariable int num)
     {
         CustomerWallet customerData;
         customerData = walletService.getData(num);
@@ -57,7 +57,7 @@ public class WalletController
     }
 
     @PostMapping("/reInitialize")
-    public ResponseEntity<String> reInitialize()
+    public synchronized ResponseEntity<String> reInitialize()
     {
         walletService.reInitialize();
         return new ResponseEntity<>(HttpStatus.CREATED);
