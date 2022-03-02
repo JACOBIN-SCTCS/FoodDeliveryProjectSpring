@@ -7,8 +7,8 @@ import com.project.wallet.model.CustomerWallet;
 public class WalletService 
 {
 
-    HashMap<Long,Long> wallet;
-    HashMap<Long,Long> initialData;
+    private HashMap<Long,Long> wallet;
+    private HashMap<Long,Long> initialData;
     
     public WalletService()
     {
