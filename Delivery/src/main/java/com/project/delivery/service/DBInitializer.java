@@ -53,6 +53,22 @@ public class DBInitializer
         CurrentState appState = em.find(CurrentState.class, 1, LockModeType.PESSIMISTIC_WRITE);
         if(appState!=null)
         {
+            int count=0;
+            while (sc.hasNextLine()) {
+
+                String str = sc.nextLine();
+                System.out.println(str);
+                String[] splited = str.split("\\s+");
+    
+                if (splited[0].indexOf('*') > -1) {
+                    count += 1;
+                    continue;
+                }
+                if (count == 1) {
+                    agents.add(Long.parseLong(str));
+                }
+                
+            }
             sc.close();
             return true;    
         }
@@ -119,7 +135,7 @@ public class DBInitializer
         for (int i=0;i<agents.size();++i)
         {
             AgentEntity entity = new AgentEntity(agents.get(i),SIGNED_OUT);
-            this.agentsRepository.save(entity);
+            this.agentsRepository.saveAndFlush(entity);
 
         }
         appState.setValue(1000l);
