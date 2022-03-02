@@ -179,17 +179,18 @@ public class DeliveryService {
                     AgentEntity unassigned_agent = agent_result.isEmpty() ? null : agent_result.get(0);
                     
                     // If an Agent is available
+                    
                     if (unassigned_agent != null) {
 
                         // Assigns the agent with smallest id to the current order,
                         // Sets the order status to Assigned
                         CurrentState orderIdState = em.find(CurrentState.class, 1,LockModeType.PESSIMISTIC_WRITE); 
                         OrderHistory currentOrder = new OrderHistory(orderIdState.getValue(), restId, custId, itemId, qty, unassigned_agent.getAgentId(), ORDER_ASSIGNED);
+                        currentOrderId = orderIdState.getValue();
                         orderIdState.setValue(orderIdState.getValue()+1);
                         // Records the order in the order history
                         this.em.persist(currentOrder);
-
-
+                        
                         // Sets the agent status to Unavailable
                         unassigned_agent.setStatus(UNAVAILABLE);
                         this.em.merge(unassigned_agent);
@@ -200,6 +201,7 @@ public class DeliveryService {
                         // Sets the order status to Unassigned
                         CurrentState orderIdState = em.find(CurrentState.class, 1,LockModeType.PESSIMISTIC_WRITE); 
                         OrderHistory currentOrder = new OrderHistory(orderIdState.getValue(), restId, custId, itemId, qty, -1l, ORDER_UNASSIGNED);
+                        currentOrderId = orderIdState.getValue();
                         orderIdState.setValue(orderIdState.getValue()+1);
 
                         // Records the order in the order history
