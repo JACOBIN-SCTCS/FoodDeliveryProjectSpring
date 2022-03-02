@@ -87,8 +87,8 @@ public class DeliveryService {
         CurrentStateRepository currentStateRepository
     ) {
         
-        this.agentsRepository =agentsRepository;
-        this.restaurantRepository = restaurantRepository;
+        this.agentsRepository       = agentsRepository;
+        this.restaurantRepository   = restaurantRepository;
         this.orderHistoryRepository = orderHistoryRepository;
         this.currentStateRepository = currentStateRepository;
         
@@ -137,7 +137,7 @@ public class DeliveryService {
                 // Sending request to RESTAURANT Service to check is order can be placed
 
                 WebClient restaurantClient =  WebClient.create(restauranturl);
-                OrderRequest orderPayload = new OrderRequest(restId, itemId, qty)  ;  
+                OrderRequest orderPayload = new OrderRequest(restId, itemId, qty);  
                 Mono<ResponseEntity<String>> restaurantReturnValue = restaurantClient.post()
                 .uri("/acceptOrder")
                 .contentType(MediaType.APPLICATION_JSON)

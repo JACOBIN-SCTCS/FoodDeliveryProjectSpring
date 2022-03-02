@@ -113,7 +113,11 @@ spec:
       containers:
         - name: kawindelivery
           image: kawindelivery
-          resources: {}
+          resources:
+            requests:
+              memory: 250Mi
+            limits:
+              memory: 300Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: Never

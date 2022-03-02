@@ -1,5 +1,6 @@
 #!/bin/bash
-minikube start
+minikube start --extra-config=kubelet.housekeeping-interval=10s 
+minikube addons enable metrics-server
 eval $(minikube docker-env)
 
 # Navigate to wallet service
@@ -36,7 +37,7 @@ docker build -t kawindelivery .
 kubectl apply -f delivery.yaml 
 sleep 5
 kubectl expose deployment kawindelivery --type=LoadBalancer --port=8080
-kubectl autoscale deployment kawindelivery --cpu-percent=50 --min=1 --max=3
+kubectl apply -f auto_scale.yaml
 
 
 echo "Port Forwarding in progress"

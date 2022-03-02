@@ -9,7 +9,6 @@ import requests
 # DELIVERY SERVICE      : http://localhost:8081
 # WALLET SERVICE        : http://localhost:8082
 
-
 def t1(result):  # First concurrent request
 
     # Add amount 500 to wallet of Customer 301
