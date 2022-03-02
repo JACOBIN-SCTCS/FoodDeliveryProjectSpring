@@ -10,6 +10,7 @@ kubectl delete -n default service kawindatabasewebserver
 kubectl delete -n default service kawinrestaurant
 kubectl delete -n default service kawinwallet
 kubectl delete -n default service kawindelivery
+kubectl delete hpa kawindelivery
 
 docker image rm kawinwallet
 docker image rm kawinrestaurant
