@@ -1,4 +1,5 @@
 #!/bin/bash
+eval $(minikube docker-env)
 kubectl delete -n default deployment kawinwallet
 kubectl delete -n default deployment kawinrestaurant
 kubectl delete -n default deployment kawindatabase
