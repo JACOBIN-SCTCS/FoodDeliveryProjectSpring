@@ -17,7 +17,7 @@ public class RestaurantService {
         resturantInventory : List containing items of the form  {ResturantId,ItemId,Quantity}
         for storing the count of items in each resturant.
     */
-    List<RestaurantInventory> restaurantInventory;
+    private List<RestaurantInventory> restaurantInventory;
 
     public void initialData() throws Exception {
 
