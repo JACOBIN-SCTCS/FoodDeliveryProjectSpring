@@ -72,7 +72,7 @@ public class WalletService
     }
 
     /* Adds amount to the wallet of customer whose customer id is custId */
-    public boolean addBalance(long custId, long amount)
+    public synchronized boolean addBalance(long custId, long amount)
     {
         if(wallet.containsKey(custId))
             wallet.put(custId, wallet.get(custId) + amount);
@@ -81,7 +81,7 @@ public class WalletService
     }
 
     /* Deducts amount from the wallet of customer whose customer id is custId */
-    public boolean deductBalance(long custId, long amount)
+    public synchronized boolean deductBalance(long custId, long amount)
     {
         if(wallet.containsKey(custId))
         {
@@ -108,7 +108,7 @@ public class WalletService
     }
 
      /* Obtain the balance information of customer custId */
-    public CustomerWallet getData(long custId)
+    public synchronized CustomerWallet getData(long custId)
     {
         if(!wallet.containsKey(custId))
         {
@@ -126,7 +126,7 @@ public class WalletService
     }
 
     /* Reinitialize all the customers balance to their initialBalance*/
-    public boolean reInitialize()
+    public synchronized boolean reInitialize()
     {
         /*Reinitialize the wallet hashmap to the initial balance*/
         wallet = new HashMap<>();

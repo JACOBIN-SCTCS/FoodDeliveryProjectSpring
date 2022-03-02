@@ -75,7 +75,7 @@ public class RestaurantService {
         
     }
   
-    public Boolean acceptOrder(Long restId, Long itemId, Long qty) 
+    public synchronized Boolean acceptOrder(Long restId, Long itemId, Long qty) 
     {
         /* 
             Function taking the ResturantId along with the itemid and quantity
@@ -105,7 +105,7 @@ public class RestaurantService {
     }
 
     
-    public Boolean fillItem(Long restId, Long itemId, Long qty) 
+    public synchronized Boolean fillItem(Long restId, Long itemId, Long qty) 
     {
          /* 
             Function for refilling item having itemId at resturant whose id is restId
@@ -127,7 +127,7 @@ public class RestaurantService {
     }
 
    
-    public Boolean reInitialize() 
+    public synchronized Boolean reInitialize() 
     {
         /*
             Reinitialize the catalogue of items available at resturants

@@ -20,7 +20,7 @@ class RestaurantController {
     
     // Accepts Order invoked by the Delivery service if the required quantity of delivery item is present.
     @PostMapping(path="/acceptOrder",consumes="application/json")
-    public synchronized ResponseEntity<String> acceptOrder(@RequestBody RestaurantInventory request)
+    public ResponseEntity<String> acceptOrder(@RequestBody RestaurantInventory request)
     {
         if (restaurantService.acceptOrder(request.restId, request.itemId, request.qty)) 
             return new ResponseEntity<String>(HttpStatus.CREATED);
@@ -31,7 +31,7 @@ class RestaurantController {
 
     // Refills the item x at the inventory by quantity y.
     @PostMapping(path="/refillItem",consumes="application/json")
-    public synchronized ResponseEntity<String> refillItem(@RequestBody RestaurantInventory request)
+    public ResponseEntity<String> refillItem(@RequestBody RestaurantInventory request)
     {
         restaurantService.fillItem(request.restId, request.itemId, request.qty);
         return new ResponseEntity<String>(HttpStatus.CREATED);
@@ -40,7 +40,7 @@ class RestaurantController {
 
     // Reinitializes the inventory
     @PostMapping(path="/reInitialize")
-    public synchronized ResponseEntity<String> reInitialize()
+    public ResponseEntity<String> reInitialize()
     {
         restaurantService.reInitialize();
         return new ResponseEntity<String>(HttpStatus.CREATED);
