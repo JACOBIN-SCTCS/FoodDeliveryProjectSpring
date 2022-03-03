@@ -32,6 +32,7 @@ import com.project.delivery.repositories.OrderHistoryRepository;
 import com.project.delivery.repositories.RestaurantRepository;
 
 import org.aspectj.weaver.loadtime.Agent;
+import org.hibernate.LockMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
+import net.bytebuddy.asm.Advice.This;
 import reactor.core.publisher.Mono;
 
 // Provides functions that handles all the endpoints of Delivery service
@@ -99,6 +101,7 @@ public class DeliveryService {
     public ResponseEntity<String> requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
         // Calculating total price for the given order
+        CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
         RestaurantEntity current_item = (RestaurantEntity) this.em.createQuery("SELECT t FROM RestaurantEntity t WHERE t.itemId = :value1 AND t.restId = :value2")
                                                                 .setParameter("value1", itemId)
                                                                 .setParameter("value2", restId)
@@ -173,11 +176,9 @@ public class DeliveryService {
                     System.out.println("Order Accepted");
                     TypedQuery<AgentEntity> agent_query =  this.em.createQuery("SELECT t FROM AgentEntity t WHERE t.status = "+ AVAILABLE + " ORDER BY agentId ASC ", AgentEntity.class)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE);
-
-                    List<AgentEntity> agent_result = agent_query.getResultList();
-
-                    AgentEntity unassigned_agent = agent_result.isEmpty() ? null : agent_result.get(0);
                     
+                    List<AgentEntity> agent_result = agent_query.getResultList();
+                    AgentEntity unassigned_agent = agent_result.isEmpty() ? null : agent_result.get(0);
                     // If an Agent is available
                     
                     if (unassigned_agent != null) {
@@ -190,12 +191,14 @@ public class DeliveryService {
                         orderIdState.setValue(orderIdState.getValue()+1);
                         // Records the order in the order history
                         this.em.persist(currentOrder);
-                        
+                        //this.orderHistoryRepository.saveAndFlush(currentOrder);
                         // Sets the agent status to Unavailable
                         unassigned_agent.setStatus(UNAVAILABLE);
                         this.em.merge(unassigned_agent);
                         this.em.merge(orderIdState);
-
+                        this.em.flush();
+                        //this.agentsRepository.saveAndFlush(unassigned_agent);
+                        //this.currentStateRepository.saveAndFlush(orderIdState);
 
                     } else {
                         // Sets the order status to Unassigned
@@ -207,6 +210,9 @@ public class DeliveryService {
                         // Records the order in the order history
                         this.em.merge(currentOrder);
                         this.em.merge(orderIdState);
+                        //this.orderHistoryRepository.saveAndFlush(currentOrder);
+                        //this.currentStateRepository.saveAndFlush(orderIdState);
+                        this.em.flush();
 
                     }    
 
@@ -234,7 +240,6 @@ public class DeliveryService {
 
                 }
         }
-
         else {
             return new ResponseEntity<String>("", HttpStatus.GONE);
         }
@@ -244,21 +249,24 @@ public class DeliveryService {
     // Fuction that handles agentSignIn endpoint
     @Transactional
     public Boolean agentSignIn(Long agentId) {
-        
+
+        CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
         AgentEntity current_agent = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_WRITE);
 
         // If agent id is not present or if signed out
         if (current_agent.getStatus() == SIGNED_OUT) {
 
             TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
-                                                                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
+                                                    .setMaxResults(1)                
+                                                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
+            
+            
             List<OrderHistory> order_result = order_query.getResultList();
-
             OrderHistory unassigned_order = order_result.isEmpty() ? null : order_result.get(0);
 
             // If unassigned orders are present
             if (unassigned_order != null) {
-
+                
                 TypedQuery<AgentEntity> agent_query =  this.em.createQuery("SELECT t FROM AgentEntity t WHERE t.status = "+ AVAILABLE + " ORDER BY agentId ASC ", AgentEntity.class)
                                                                     .setLockMode(LockModeType.PESSIMISTIC_WRITE);
 
@@ -279,6 +287,9 @@ public class DeliveryService {
 
                     this.em.merge(current_agent);
                     this.em.merge(unassigned_order);
+                    //this.agentsRepository.saveAndFlush(current_agent);
+                    //this.orderHistoryRepository.saveAndFlush(unassigned_order);
+                    this.em.flush();
                 
                 } else {
 
@@ -293,17 +304,17 @@ public class DeliveryService {
 
                     this.em.merge(assigning_agent);
                     this.em.merge(unassigned_order);
-                    
+                    this.em.flush(); 
                     System.out.println("Agent id " + unassigned_agent.getAgentId() );
-                }                        
+                }                     
                 
 
             } else {
 
                 // Sets agent status to available
                 current_agent.setStatus(AVAILABLE);
-
                 this.em.merge(current_agent);
+                this.em.flush();
             }          
 
         } 
@@ -316,6 +327,7 @@ public class DeliveryService {
     @Transactional
     public Boolean agentSignOut(Long agentId) {
 
+        CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
         AgentEntity current_agent = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_WRITE);
 
         // If agent status is available, then sets the status to signed out
@@ -323,6 +335,7 @@ public class DeliveryService {
 
             current_agent.setStatus(SIGNED_OUT);
             this.em.merge(current_agent);
+            this.em.flush();
         }
 
         return true;
@@ -331,7 +344,8 @@ public class DeliveryService {
     // Function that handles the orderDelivered endpoint
     @Transactional
     public Boolean orderDelivered(Long orderId) {
-
+        
+        CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
         System.out.println("Order ID" + orderId );
 
         OrderHistory order = this.em.find(OrderHistory.class, orderId, LockModeType.PESSIMISTIC_WRITE);
@@ -344,12 +358,13 @@ public class DeliveryService {
 
         order.setAssigned(ORDER_DELIVERED);
         this.em.merge(order);
+        this.em.flush();
 
         Long agentId = order.getAgentId();
 
         
         TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
-                                                                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
+                                                                  .setLockMode(LockModeType.PESSIMISTIC_WRITE);
 
         List<OrderHistory> order_result = order_query.getResultList();
 
@@ -368,6 +383,7 @@ public class DeliveryService {
 
             current_agent.setStatus(AVAILABLE);
             this.em.merge(current_agent);
+            this.em.flush();
         }
 
         return true;
@@ -378,6 +394,7 @@ public class DeliveryService {
     public ResponseEntity<OrderStatus> getOrderStatus(long orderId) {
 
         // If order id is not found in the order history
+        CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
         OrderHistory hist = this.em.find(OrderHistory.class, orderId, LockModeType.PESSIMISTIC_READ);
 
         if(hist==null)

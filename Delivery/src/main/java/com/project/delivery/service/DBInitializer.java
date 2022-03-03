@@ -123,6 +123,8 @@ public class DBInitializer
         }
         sc.close(); 
         this.em.persist(new CurrentState(1,1000l));
+        // Global Lock 
+        this.em.persist(new CurrentState(2,1l));
         return true;
     }
 
