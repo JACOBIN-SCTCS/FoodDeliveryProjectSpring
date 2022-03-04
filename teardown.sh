@@ -18,6 +18,8 @@ sleep $sleep_time
 
 docker image rm kawinwallet
 docker image rm kawinrestaurant
-docker imge rm kawindatabase
+docker image rm kawindatabase
+docker image rm kawindelivery
+
 
 minikube stop
