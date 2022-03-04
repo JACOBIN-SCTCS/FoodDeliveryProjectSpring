@@ -2,6 +2,7 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
+# Scenario:
 # Check if a customer's wallet balance is consistent
 # after we add and deduct the same amount from it concurrently.
 
@@ -45,13 +46,14 @@ def test():
     http_response = requests.get(
         f"http://localhost:8082/balance/301")
 
-    if(http_response.status_code != HTTPStatus.OK):
+    if (http_response.status_code != HTTPStatus.OK):
         return 'Fail1'
 
     res_body = http_response.json()
 
     cust_id1 = res_body.get("custId")
     balance1 = res_body.get("balance")
+
 
     ### Parallel Execution Begins ###
     thread1 = Thread(target=t1, kwargs={"result": result})
@@ -82,10 +84,10 @@ def test():
     # Check the final balance
     balance2 = res_body.get("balance")
 
+    # Checks if the initial balance is not same as the final balance
     if balance1 != balance2:
         return "Fail4"
 
-    
     return 'Pass'
 
 

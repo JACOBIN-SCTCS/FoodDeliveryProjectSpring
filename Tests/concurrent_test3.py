@@ -2,8 +2,9 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
-# Stress testing of delivery service
-# Number of records in 
+# Scenario:
+# Stress testing of delivery service to check whether 
+# the AutoScalar is scaling up the number of pods of delivery service
 
 # RESTAURANT SERVICE    : http://localhost:8080
 # DELIVERY SERVICE      : http://localhost:8081
@@ -13,7 +14,7 @@ MAXIMUM_REQUESTS = 100
 
 def t1(result):  # First concurrent request
 
-    # Add amount 500 to wallet of Customer 301
+    # Refills the item 1 from restaurant 101 by quantity 1
     http_response = requests.post(
         "http://localhost:8080/refillItem", json={"restId": 101, "itemId":1, "qty":1})
 
@@ -22,15 +23,15 @@ def t1(result):  # First concurrent request
 
 def t2(result):  # Second concurrent request
 
-    # Deduct amount 500 from wallet of Customer 301
+    # Requests an order for item 1 from restaurant 1 for quantity 1
     http_response = requests.post(
         "http://localhost:8081/requestOrder", json={"custId": 301, "restId": 101, "itemId":1, "qty": 1})
 
     result["2"] = http_response
 
-def t3(result):  # First concurrent request
+def t3(result):  # Third concurrent request
 
-    # Add amount 500 to wallet of Customer 301
+    # Add amount 400 to wallet of Customer 301
     http_response = requests.post(
         "http://localhost:8082/addBalance", json={"custId": 301, "amount":400})
 
@@ -49,33 +50,21 @@ def test():
     # Reinitialize Wallet service
     http_response = requests.post("http://localhost:8082/reInitialize")
 
-    # Check balance of customer 301
-    http_response = requests.get(
-        f"http://localhost:8081/agent/201")
-
-    if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail1'
-
-    res_body = http_response.json()
-
-    agent_id1 = res_body.get("agentId")
-    status1 = res_body.get("status")
-
     ### Parallel Execution Begins ###
 
     try:
-        thread = [0 for i in range(300)]
-        for i in range(100):
+        thread = [0 for i in range(3*MAXIMUM_REQUESTS)]
+        for i in range(MAXIMUM_REQUESTS):
             thread[3*i] = Thread(target=t1, kwargs={"result": result})
             thread[(3*i)+1] = Thread(target=t2, kwargs={"result": result})
             thread[(3*i)+2] = Thread(target=t3, kwargs={"result": result})
 
-        for i in range(100):
+        for i in range(MAXIMUM_REQUESTS):
             thread[3*i].start()
             thread[(3*i)+1].start()
             thread[(3*i)+2].start()
 
-        for i in range(100):
+        for i in range(MAXIMUM_REQUESTS):
             thread[3*i].join()
             thread[(3*i)+1].join()
             thread[(3*i)+2].join()
