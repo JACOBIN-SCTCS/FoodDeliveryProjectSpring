@@ -115,9 +115,8 @@ spec:
           image: kawindelivery
           resources:
             requests:
-              memory: 250Mi
-            limits:
-              memory: 300Mi
+              cpu: 200m
+              memory: 700Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           imagePullPolicy: Never
