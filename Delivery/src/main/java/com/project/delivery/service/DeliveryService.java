@@ -350,7 +350,7 @@ public class DeliveryService {
 
         OrderHistory order = this.em.find(OrderHistory.class, orderId, LockModeType.PESSIMISTIC_WRITE);
 
-        if(order == null || order.getAssigned() != ORDER_ASSIGNED)  {
+        if (order == null || order.getAssigned() != ORDER_ASSIGNED)  {
 
             System.out.println("Invalid order");
             return false;
@@ -362,7 +362,6 @@ public class DeliveryService {
 
         Long agentId = order.getAgentId();
 
-        
         TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
                                                                   .setLockMode(LockModeType.PESSIMISTIC_WRITE);
 
