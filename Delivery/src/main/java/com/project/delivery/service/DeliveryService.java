@@ -83,7 +83,7 @@ public class DeliveryService {
 
     long currentOrderId = INITIAL_ORDER_ID;
 
-    // Constructor for Delivery Service that initialises the In-Memory data structures
+    // Constructor for Delivery Service that initialises the repositories for database tables
     public DeliveryService(AgentsRepository agentsRepository, RestaurantRepository restaurantRepository,
         OrderHistoryRepository orderHistoryRepository,
         CurrentStateRepository currentStateRepository
@@ -257,12 +257,16 @@ public class DeliveryService {
     @Transactional
     public Boolean agentSignIn(Long agentId) {
 
+        // Acquires global lock for all tables in the database
         CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
+
+        // Finds the record for the given agent
         AgentEntity current_agent = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_WRITE);
 
         // If agent id is not present or if signed out
         if (current_agent.getStatus() == SIGNED_OUT) {
 
+            // Finds all the unassigned orders sorted based on their order id
             TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
                                                     .setMaxResults(1)                
                                                     .setLockMode(LockModeType.PESSIMISTIC_WRITE);
@@ -274,6 +278,7 @@ public class DeliveryService {
             // If unassigned orders are present
             if (unassigned_order != null) {
                 
+                // Finds any available agent with smaller agent id
                 TypedQuery<AgentEntity> agent_query =  this.em.createQuery("SELECT t FROM AgentEntity t WHERE t.status = "+ AVAILABLE + " ORDER BY agentId ASC ", AgentEntity.class)
                                                                     .setLockMode(LockModeType.PESSIMISTIC_WRITE);
 
@@ -294,20 +299,16 @@ public class DeliveryService {
 
                     this.em.merge(current_agent);
                     this.em.merge(unassigned_order);
-                    //this.agentsRepository.saveAndFlush(current_agent);
-                    //this.orderHistoryRepository.saveAndFlush(unassigned_order);
                     this.em.flush();
                 
                 } else {
 
-                    /* Improve */
                     // Sets agent status to unavailable
                     AgentEntity assigning_agent = this.em.find(AgentEntity.class, unassigned_agent.getAgentId(), LockModeType.PESSIMISTIC_WRITE);
                     assigning_agent.setStatus(UNAVAILABLE);
 
                     unassigned_order.setAgentId(current_agent.getAgentId());
                     unassigned_order.setAssigned(ORDER_ASSIGNED); 
-
 
                     this.em.merge(assigning_agent);
                     this.em.merge(unassigned_order);
@@ -352,23 +353,28 @@ public class DeliveryService {
     @Transactional
     public Boolean orderDelivered(Long orderId) {
         
+        // Acquires global lock for all tables in the database
         CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
         System.out.println("Order ID" + orderId );
 
+        // Finds the order with the given order id
         OrderHistory order = this.em.find(OrderHistory.class, orderId, LockModeType.PESSIMISTIC_WRITE);
 
+        // Checks if the order id is present or if it is already delivered
         if (order == null || order.getAssigned() != ORDER_ASSIGNED)  {
 
             System.out.println("Invalid order");
             return false;
         }
 
+        // Updates the order status to delivered
         order.setAssigned(ORDER_DELIVERED);
         this.em.merge(order);
         this.em.flush();
 
         Long agentId = order.getAgentId();
 
+        // Queries for any unassigned orders 
         TypedQuery<OrderHistory> order_query =  this.em.createQuery("SELECT t FROM OrderHistory t WHERE t.assigned = "+ ORDER_UNASSIGNED + " ORDER BY orderId ASC ", OrderHistory.class)
                                                                   .setLockMode(LockModeType.PESSIMISTIC_WRITE);
 
@@ -381,10 +387,14 @@ public class DeliveryService {
 
             unassigned_order.setAgentId(agentId);
             unassigned_order.setAssigned(ORDER_ASSIGNED); 
+            this.em.merge(unassigned_order);
+            this.em.flush();
 
             System.out.println("Agent" + agentId + "assigned to" + unassigned_order.getOrderId());
             
         } else {
+
+            // Updates the status of agent to available
             AgentEntity current_agent = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_WRITE);
 
             current_agent.setStatus(AVAILABLE);
@@ -399,25 +409,24 @@ public class DeliveryService {
     @Transactional
     public ResponseEntity<OrderStatus> getOrderStatus(long orderId) {
 
-        // If order id is not found in the order history
+        
         CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
+        
+        // Finds the record for the given order id
         OrderHistory hist = this.em.find(OrderHistory.class, orderId, LockModeType.PESSIMISTIC_READ);
 
-        if(hist==null)
-        {
+        // If order id is not found in the order history
+        if ( hist == null ) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        //if(!orderHist.containsKey(orderId))
-        //    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        //Order order = orderHist.get(orderId);
 
         int orderstatus = hist.getAssigned();
         OrderStatus status = new OrderStatus(orderId);
 
-        if(orderstatus==ORDER_UNASSIGNED) {
+        if ( orderstatus == ORDER_UNASSIGNED ) {
             status.setStatus(new String("unassigned"));
         }
-        else if (orderstatus==ORDER_ASSIGNED) {
+        else if ( orderstatus == ORDER_ASSIGNED ) {
             status.setStatus(new String("assigned"));
         }
         else {
@@ -434,7 +443,6 @@ public class DeliveryService {
     @Transactional
     public ResponseEntity<DeliveryAgent> getAgentStatus(long agentId) {
 
-        //int status = agentStatus.get(agentId);
         AgentEntity agentstatus = this.em.find(AgentEntity.class, agentId, LockModeType.PESSIMISTIC_READ);  
         int status = agentstatus.getStatus();
 
