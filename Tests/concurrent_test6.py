@@ -2,10 +2,9 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
-
-
-# Check if only one customer is able to deplete all remaining items of id
-# itemId when  parallel order requests come
+# Scenario:
+# Check if only one customer is able to deplete all quantites of a given item
+# when parallel order requests come for the same item
 
 
 # RESTAURANT SERVICE    : http://localhost:8080

@@ -91,7 +91,7 @@ def test():
         if(http_response.status_code != HTTPStatus.CREATED):
             return 'Fail5'
 
-        orderId3 = res_body.get("orderId")
+        orderId3 = http_response.json().get("orderId")
 
         # Checks if the starting order id is 1000
         if orderId3 != 1000:
@@ -106,7 +106,7 @@ def test():
         if(http_response.status_code != HTTPStatus.CREATED):
             return 'Fail7'
 
-        orderId3 = res_body.get("orderId")
+        orderId3 = http_response.json().get("orderId")
 
         # Checks if the current order id is 1001
         # Because the order request given concurrently will have order id 1000 in this cases
