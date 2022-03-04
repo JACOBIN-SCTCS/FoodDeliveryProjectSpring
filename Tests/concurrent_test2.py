@@ -2,6 +2,7 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
+# Scenario:
 # Check if an agent gets assigned to an order after sign in
 # irrespective of whether sign-in request reaches first or the request order request.
 
@@ -12,7 +13,7 @@ import requests
 
 def t1(result):  # First concurrent request
 
-    # Add amount 500 to wallet of Customer 301
+    # Signs in agent id 201
     http_response = requests.post(
         "http://localhost:8081/agentSignIn", json={"agentId": 201})
 
@@ -21,7 +22,7 @@ def t1(result):  # First concurrent request
 
 def t2(result):  # Second concurrent request
 
-    # Deduct amount 500 from wallet of Customer 301
+    # Requests an order
     http_response = requests.post(
         "http://localhost:8081/requestOrder", json={"custId": 301, "restId": 101, "itemId":1, "qty": 3})
 
@@ -41,7 +42,7 @@ def test():
     # Reinitialize Wallet service
     http_response = requests.post("http://localhost:8082/reInitialize")
 
-    # Check balance of customer 301
+    # Checks the status of agent id 201
     http_response = requests.get(
         f"http://localhost:8081/agent/201")
 
@@ -50,8 +51,10 @@ def test():
 
     res_body = http_response.json()
 
-    agent_id1 = res_body.get("agentId")
     status1 = res_body.get("status")
+
+    if status1 != 'signed-out':
+        return 'Fail2'
 
     ### Parallel Execution Begins ###
     thread1 = Thread(target=t1, kwargs={"result": result})
@@ -66,45 +69,41 @@ def test():
     ### Parallel Execution Ends ###
 
     if result["1"].status_code != HTTPStatus.CREATED or result["2"].status_code != HTTPStatus.CREATED:
-        return "Fail2"
-
-    orderId1 = result["2"].json().get("orderId")
-    if orderId1 != 1000:
         return "Fail3"
 
-    # Check balance of customer 301
+    orderId1 = result["2"].json().get("orderId")
+
+    if orderId1 != 1000:
+        return "Fail4"
+
+    # Check status of agent id 201
     http_response = requests.get(
         f"http://localhost:8081/agent/201")
 
     if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail4'
+        return 'Fail5'
 
     res_body = http_response.json()
 
-    # Check the status of agent 201
-    agent_id2 = res_body.get("agentId")
     status2 = res_body.get("status")
 
     if status2 != "unavailable":
-        return "Fail5"
+        return "Fail6"
 
-    # Check order status
+    # check the order status for order whose order id
+    # is given by variable orderId1
     http_response = requests.get(
         f"http://localhost:8081/order/{orderId1}")
 
     if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail6'
+        return 'Fail7'
 
     res_body = http_response.json()
     
-    # check the order status for order whose order id
-    # is given by variable orderId1
-
-    orderId2 = res_body.get("orderId")
     status3  = res_body.get("status")
 
     if status3 != "assigned":
-        return "Fail7"
+        return "Fail8"
 
     print(status3)
     

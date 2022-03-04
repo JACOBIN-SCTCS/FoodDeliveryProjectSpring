@@ -2,6 +2,7 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
+# Scenario:
 # Check if the order delivered remains consistent when given concurrent requests to the same resource.
 
 # RESTAURANT SERVICE    : http://localhost:8080
@@ -10,12 +11,11 @@ import requests
 
 def t1(result, id, orderId):  # First concurrent request
 
-    # Add amount 500 to wallet of Customer 301
+    # Changes the status of the given order to delivered
     http_response = requests.post(
         "http://localhost:8081/orderDelivered", json={"orderId": orderId})
 
     result[id] = http_response
-
 
 def test():
 
@@ -30,45 +30,32 @@ def test():
     # Reinitialize Wallet service
     http_response = requests.post("http://localhost:8082/reInitialize")
 
-    # Checks the status of agent 201
-    http_response = requests.get(f"http://localhost:8081/agent/201")
-
-    if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail1'
-
-    res_body = http_response.json()
-
-    status1 = res_body.get("status")
-
-    if (status1 != "signed-out"):
-        return "Fail2"
-
     #Signing in Agent 201
     http_response = requests.post(
         "http://localhost:8081/agentSignIn", json={"agentId": 201})
     
     if(http_response.status_code != HTTPStatus.CREATED):
-        return 'Fail3'
+        return 'Fail1'
 
     # Checks the status of agent 201
     http_response = requests.get(f"http://localhost:8081/agent/201")
 
     if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail4'
+        return 'Fail2'
 
     res_body = http_response.json()
 
     status2 = res_body.get("status")
 
     if (status2 != "available"):
-        return "Fail5"
+        return "Fail3"
 
     # Requesting for order
     http_response = requests.post(
         "http://localhost:8081/requestOrder", json={"custId": 301, "restId": 101, "itemId":1, "qty": 3})
     
     if(http_response.status_code != HTTPStatus.CREATED):
-        return 'Fail6'
+        return 'Fail4'
 
     res_body = http_response.json()
 
@@ -79,17 +66,17 @@ def test():
         "http://localhost:8081/requestOrder", json={"custId": 301, "restId": 101, "itemId":1, "qty": 3})
     
     if(http_response.status_code != HTTPStatus.CREATED):
-        return 'Fail7'
+        return 'Fail5'
 
     res_body = http_response.json()
 
     orderId2 = res_body.get("orderId")
 
-    # Get status of order
+    # Get status of first order
     http_response = requests.get(f"http://localhost:8081/order/{orderId}")
 
     if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail8'
+        return 'Fail6'
 
     res_body = http_response.json()
 
@@ -97,10 +84,10 @@ def test():
     status3 = res_body.get("status")
 
     if (status3 != "assigned"):
-        return "Fail9"
+        return "Fail7"
 
     if (agent_id3 != 201):
-        return "Fail10"
+        return "Fail8"
 
     thread = [0 for i in range(10)]
 
@@ -116,28 +103,28 @@ def test():
 
     ### Parallel Execution Ends ###
 
-    for i in range(1000):
+    for i in range(10):
         if result[i].status_code != HTTPStatus.CREATED:
-            return "Fail11"
+            return "Fail9"
 
 
-
-    # Get status of order
+    # Get status of the second order
     http_response = requests.get(f"http://localhost:8081/order/{orderId2}")
 
     if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail12'
+        return 'Fail10'
 
     res_body = http_response.json()
 
-    agent_id4 = res_body.get("agentId")
     status4 = res_body.get("status")
 
+    # The status of the second order should be assigned because the first order got delivered
+    # and there will be one available agent
     if (status4 != "assigned"):
-        return "Fail13"
+        return "Fail11"
 
     if (agent_id3 != 201):
-        return "Fail14"
+        return "Fail12"
     
     return 'Pass'
 
