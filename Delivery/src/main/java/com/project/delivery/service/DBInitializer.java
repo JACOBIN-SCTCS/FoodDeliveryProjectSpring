@@ -131,6 +131,7 @@ public class DBInitializer
     @Transactional 
     public boolean reinitTables()
     {
+        CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
         CurrentState appState = em.find(CurrentState.class, 1, LockModeType.PESSIMISTIC_WRITE);
         orderHistoryRepository.deleteAll();
         agentsRepository.deleteAll();

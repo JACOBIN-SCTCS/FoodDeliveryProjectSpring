@@ -105,8 +105,6 @@ def test():
     if status3 != "assigned":
         return "Fail8"
 
-    print(status3)
-    
     return 'Pass'
 
 

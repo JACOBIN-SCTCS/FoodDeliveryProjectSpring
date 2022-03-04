@@ -76,14 +76,14 @@ def test():
     orderstatus = getOrderStatus(1000)
     orderstatus = orderstatus.json()
     if(orderstatus.get("status")!="assigned"):
-        print("Fail2")
+        return "Fail2"
     
     agent1status = getAgentStatus(201).json()
     agent2status = getAgentStatus(202).json()
 
-    if(not((agent1status.get("status")=="assigned" or agent2status.get("status")=="assigned") 
+    if(not((agent1status.get("status")=="unavailable" or agent2status.get("status")=="unavailable") 
         and (agent1status.get("status")!=  agent2status.get("status")) )):
-        print("Fail3")
+        return "Fail3"
     
 
     return 'Pass'
