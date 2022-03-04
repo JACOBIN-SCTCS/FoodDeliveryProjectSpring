@@ -2,13 +2,14 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
-# Check if a customer's wallet balance is consistent
-# after we add and deduct the same amount from it concurrently.
+# Stress testing of delivery service
+# Number of records in 
 
 # RESTAURANT SERVICE    : http://localhost:8080
 # DELIVERY SERVICE      : http://localhost:8081
 # WALLET SERVICE        : http://localhost:8082
 
+MAXIMUM_REQUESTS = 100
 
 def t1(result):  # First concurrent request
 
@@ -62,18 +63,18 @@ def test():
 
     ### Parallel Execution Begins ###
 
-    thread = [0 for i in range(300)]
-    for i in range(100):
+    thread = [0 for i in range(MAXIMUM_REQUESTS*3)]
+    for i in range(MAXIMUM_REQUESTS):
         thread[3*i] = Thread(target=t1, kwargs={"result": result})
         thread[(3*i)+1] = Thread(target=t2, kwargs={"result": result})
         thread[(3*i)+2] = Thread(target=t3, kwargs={"result": result})
 
-    for i in range(100):
+    for i in range(MAXIMUM_REQUESTS):
         thread[3*i].start()
         thread[(3*i)+1].start()
         thread[(3*i)+2].start()
 
-    for i in range(100):
+    for i in range(MAXIMUM_REQUESTS):
         thread[3*i].join()
         thread[(3*i)+1].join()
         thread[(3*i)+2].join()
