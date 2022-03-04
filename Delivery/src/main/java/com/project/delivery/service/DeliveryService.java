@@ -101,7 +101,11 @@ public class DeliveryService {
     public ResponseEntity<String> requestOrder(Long custId, Long restId, Long itemId, Long qty) {
 
         // Calculating total price for the given order
+
+        // Gets global lock on all tables so that multiple tables aren't accessed at the same time
         CurrentState global_lock = this.em.find(CurrentState.class, 2,LockModeType.PESSIMISTIC_WRITE);
+
+        // Queries for the price of the given item from the database
         RestaurantEntity current_item = (RestaurantEntity) this.em.createQuery("SELECT t FROM RestaurantEntity t WHERE t.itemId = :value1 AND t.restId = :value2")
                                                                 .setParameter("value1", itemId)
                                                                 .setParameter("value2", restId)
@@ -116,18 +120,18 @@ public class DeliveryService {
         WalletRequest payload = new WalletRequest(custId, totalPrice);  
 
         Mono<ResponseEntity<String>> retvalue = client.post()
-        .uri("/deductBalance")
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(Mono.just(payload), WalletRequest.class)
-        .retrieve()
-        .toEntity(String.class)
-        .onErrorResume(WebClientResponseException.class,
-            ex -> ex.getRawStatusCode() ==  HttpStatus.GONE.value() ? Mono.empty() : Mono.empty());
+            .uri("/deductBalance")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Mono.just(payload), WalletRequest.class)
+            .retrieve()
+            .toEntity(String.class)
+            .onErrorResume(WebClientResponseException.class,
+                ex -> ex.getRawStatusCode() ==  HttpStatus.GONE.value() ? Mono.empty() : Mono.empty());
     
 
         ResponseEntity<String> walletResponse = retvalue.block();
-        if(walletResponse==null)
-        {
+        
+        if ( walletResponse == null ) {
             return new ResponseEntity<String>("", HttpStatus.GONE);
         }
         System.out.println(walletResponse.getStatusCode());
@@ -141,27 +145,29 @@ public class DeliveryService {
 
                 WebClient restaurantClient =  WebClient.create(restauranturl);
                 OrderRequest orderPayload = new OrderRequest(restId, itemId, qty);  
+
                 Mono<ResponseEntity<String>> restaurantReturnValue = restaurantClient.post()
-                .uri("/acceptOrder")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Mono.just(orderPayload), OrderRequest.class)
-                .retrieve()
-                .toEntity(String.class)
-                .onErrorResume(WebClientResponseException.class,
-                    ex -> ex.getRawStatusCode() == HttpStatus.GONE.value() ? Mono.empty() : Mono.empty());
+                    .uri("/acceptOrder")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Mono.just(orderPayload), OrderRequest.class)
+                    .retrieve()
+                    .toEntity(String.class)
+                    .onErrorResume(WebClientResponseException.class,
+                        ex -> ex.getRawStatusCode() == HttpStatus.GONE.value() ? Mono.empty() : Mono.empty());
     
 
                 ResponseEntity<String> restaurantResponse = restaurantReturnValue .block();
-                if(restaurantResponse==null)
-                {
+
+                if( restaurantResponse == null ) {
                     client =  WebClient.create(walleturl);
                     payload = new WalletRequest(custId, totalPrice);  
+
                     retvalue = client.post()
-                    .uri("/addBalance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Mono.just(payload), WalletRequest.class)
-                    .retrieve()
-                    .toEntity(String.class);
+                        .uri("/addBalance")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(Mono.just(payload), WalletRequest.class)
+                        .retrieve()
+                        .toEntity(String.class);
                 
                     walletResponse = retvalue.block();
                     System.out.println(walletResponse.getStatusCode());
@@ -174,13 +180,15 @@ public class DeliveryService {
                 if (restaurantResponse.getStatusCode() == HttpStatus.CREATED) {
 
                     System.out.println("Order Accepted");
+
+                    // Queries for the available agents ordered based on agent id from the database 
                     TypedQuery<AgentEntity> agent_query =  this.em.createQuery("SELECT t FROM AgentEntity t WHERE t.status = "+ AVAILABLE + " ORDER BY agentId ASC ", AgentEntity.class)
-                    .setLockMode(LockModeType.PESSIMISTIC_WRITE);
+                                                                .setLockMode(LockModeType.PESSIMISTIC_WRITE);
                     
                     List<AgentEntity> agent_result = agent_query.getResultList();
                     AgentEntity unassigned_agent = agent_result.isEmpty() ? null : agent_result.get(0);
-                    // If an Agent is available
                     
+                    // If an Agent is available
                     if (unassigned_agent != null) {
 
                         // Assigns the agent with smallest id to the current order,
@@ -189,19 +197,19 @@ public class DeliveryService {
                         OrderHistory currentOrder = new OrderHistory(orderIdState.getValue(), restId, custId, itemId, qty, unassigned_agent.getAgentId(), ORDER_ASSIGNED);
                         currentOrderId = orderIdState.getValue();
                         orderIdState.setValue(orderIdState.getValue()+1);
+                        
                         // Records the order in the order history
                         this.em.persist(currentOrder);
-                        //this.orderHistoryRepository.saveAndFlush(currentOrder);
+                        
                         // Sets the agent status to Unavailable
                         unassigned_agent.setStatus(UNAVAILABLE);
                         this.em.merge(unassigned_agent);
                         this.em.merge(orderIdState);
                         this.em.flush();
-                        //this.agentsRepository.saveAndFlush(unassigned_agent);
-                        //this.currentStateRepository.saveAndFlush(orderIdState);
 
                     } else {
-                        // Sets the order status to Unassigned
+
+                        // Sets the order status to unassigned 
                         CurrentState orderIdState = em.find(CurrentState.class, 1,LockModeType.PESSIMISTIC_WRITE); 
                         OrderHistory currentOrder = new OrderHistory(orderIdState.getValue(), restId, custId, itemId, qty, -1l, ORDER_UNASSIGNED);
                         currentOrderId = orderIdState.getValue();
@@ -210,8 +218,6 @@ public class DeliveryService {
                         // Records the order in the order history
                         this.em.merge(currentOrder);
                         this.em.merge(orderIdState);
-                        //this.orderHistoryRepository.saveAndFlush(currentOrder);
-                        //this.currentStateRepository.saveAndFlush(orderIdState);
                         this.em.flush();
 
                     }    
@@ -227,13 +233,14 @@ public class DeliveryService {
                     client =  WebClient.create(walleturl);
                     payload = new WalletRequest(custId, totalPrice)  ;  
                     retvalue = client.post()
-                    .uri("/addBalance")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Mono.just(payload), WalletRequest.class)
-                    .retrieve()
-                    .toEntity(String.class);
+                        .uri("/addBalance")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(Mono.just(payload), WalletRequest.class)
+                        .retrieve()
+                        .toEntity(String.class);
                 
                     walletResponse = retvalue.block();
+                    
                     System.out.println(walletResponse.getStatusCode());
 
                     return new ResponseEntity<String>("", HttpStatus.GONE);
