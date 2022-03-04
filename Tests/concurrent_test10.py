@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from threading import Thread
 import requests
-
+from concurrent_helper.concurrent_helper import getAgentStatus
 from concurrent_helper.concurrent_helper import getOrderStatus
 
 #   Ensure that only one agent is assigned to
@@ -13,14 +13,20 @@ from concurrent_helper.concurrent_helper import getOrderStatus
 # WALLET SERVICE        : http://localhost:8082
 
 def t1(result):
-    http_response = requests.get(
-        "http://localhost:8081/agent/201",
+    http_response = requests.post(
+        "http://localhost:8081/agentSignIn",
+        json={
+            "agentId": 201
+        }
     )
     result["1"] = http_response
 
 def t2(result):
-    http_response = requests.get(
-       "http://localhost:8081/agent/202",
+    http_response = requests.post(
+        "http://localhost:8081/agentSignIn",
+       json={
+           "agentId" : 202
+       }
     )
     result["2"] = http_response
 
@@ -64,19 +70,21 @@ def test():
 
     ### Parallel Execution Ends ###
     # Both agents signin must be successful
-    if result["1"].status_code != HTTPStatus.OK or result["2"].status_code != HTTPStatus.OK:
+    if result["1"].status_code != HTTPStatus.CREATED or result["2"].status_code != HTTPStatus.CREATED:
         return "Fail1"
     
     orderstatus = getOrderStatus(1000)
     orderstatus = orderstatus.json()
-    if(orderstatus.get("agentId")!="assigned"):
+    if(orderstatus.get("status")!="assigned"):
         print("Fail2")
     
+    agent1status = getAgentStatus(201).json()
+    agent2status = getAgentStatus(202).json()
+
+    if(not((agent1status.get("status")=="assigned" or agent2status.get("status")=="assigned") 
+        and (agent1status.get("status")!=  agent2status.get("status")) )):
+        print("Fail3")
     
-
-
-   
-
 
     return 'Pass'
 
