@@ -2,8 +2,8 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
-# Check if an agent gets assigned to an order after sign in
-# irrespective of whether sign-in request reaches first or the request order request.
+# Check if a customer's wallet balance is consistent
+# after we add and deduct the same amount from it concurrently.
 
 # RESTAURANT SERVICE    : http://localhost:8080
 # DELIVERY SERVICE      : http://localhost:8081
@@ -14,7 +14,7 @@ def t1(result):  # First concurrent request
 
     # Add amount 500 to wallet of Customer 301
     http_response = requests.post(
-        "http://localhost:8081/agentSignIn", json={"agentId": 201})
+        "http://localhost:8082/addBalance", json={"custId": 301, "amount": 500})
 
     result["1"] = http_response
 
@@ -23,7 +23,7 @@ def t2(result):  # Second concurrent request
 
     # Deduct amount 500 from wallet of Customer 301
     http_response = requests.post(
-        "http://localhost:8081/requestOrder", json={"custId": 301, "restId": 101, "itemId":1, "qty": 3})
+        "http://localhost:8082/deductBalance", json={"custId": 301, "amount": 500})
 
     result["2"] = http_response
 
@@ -43,15 +43,15 @@ def test():
 
     # Check balance of customer 301
     http_response = requests.get(
-        f"http://localhost:8081/agent/201")
+        f"http://localhost:8082/balance/301")
 
     if(http_response.status_code != HTTPStatus.OK):
         return 'Fail1'
 
     res_body = http_response.json()
 
-    agent_id1 = res_body.get("agentId")
-    status1 = res_body.get("status")
+    cust_id1 = res_body.get("custId")
+    balance1 = res_body.get("balance")
 
     ### Parallel Execution Begins ###
     thread1 = Thread(target=t1, kwargs={"result": result})
@@ -68,45 +68,23 @@ def test():
     if result["1"].status_code != HTTPStatus.CREATED or result["2"].status_code != HTTPStatus.CREATED:
         return "Fail2"
 
-    orderId1 = result["2"].json().get("orderId")
-    if orderId1 != 1000:
-        return "Fail3"
-
     # Check balance of customer 301
     http_response = requests.get(
-        f"http://localhost:8081/agent/201")
+        f"http://localhost:8082/balance/301")
 
     if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail4'
+        return 'Fail3'
 
     res_body = http_response.json()
 
-    # Check the status of agent 201
-    agent_id2 = res_body.get("agentId")
-    status2 = res_body.get("status")
-
-    if status2 != "unavailable":
-        return "Fail5"
-
-    # Check order status
-    http_response = requests.get(
-        f"http://localhost:8081/order/{orderId1}")
-
-    if(http_response.status_code != HTTPStatus.OK):
-        return 'Fail6'
-
-    res_body = http_response.json()
+    cust_id2 = res_body.get("custId")
     
-    # check the order status for order whose order id
-    # is given by variable orderId1
+    # Check the final balance
+    balance2 = res_body.get("balance")
 
-    orderId2 = res_body.get("orderId")
-    status3  = res_body.get("status")
+    if balance1 != balance2:
+        return "Fail4"
 
-    if status3 != "assigned":
-        return "Fail7"
-
-    print(status3)
     
     return 'Pass'
 
