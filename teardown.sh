@@ -12,6 +12,10 @@ kubectl delete -n default service kawinwallet
 kubectl delete -n default service kawindelivery
 kubectl delete hpa kawindelivery
 
+sleep_time=20
+echo "Waiting $sleep_time s before deleting images"
+sleep $sleep_time
+
 docker image rm kawinwallet
 docker image rm kawinrestaurant
 docker imge rm kawindatabase

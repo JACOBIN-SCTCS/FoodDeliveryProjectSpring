@@ -3,25 +3,8 @@ minikube start --extra-config=kubelet.housekeeping-interval=10s
 minikube addons enable metrics-server
 eval $(minikube docker-env)
 
-# Navigate to wallet service
-cd Wallet/
-./mvnw package
-docker build -t kawinwallet .
-kubectl apply -f wallet.yaml
-sleep 5
-kubectl expose deployment kawinwallet --type=LoadBalancer --port=8080
-
-# Navigate to restaurant service
-cd ..
-cd Restaurant/
-./mvnw package
-docker build -t kawinrestaurant .
-kubectl apply -f restaurant.yaml
-sleep 5
-kubectl expose deployment kawinrestaurant --type=LoadBalancer --port=8080
 
 # Initialize database
-cd ..
 cd Database
 bash createDatabaseService.sh 
 kubectl apply -f database.yaml
@@ -38,6 +21,24 @@ kubectl apply -f delivery.yaml
 sleep 5
 kubectl expose deployment kawindelivery --type=LoadBalancer --port=8080
 kubectl apply -f auto_scale.yaml
+
+# Navigate to wallet service
+cd ..
+cd Wallet/
+./mvnw package
+docker build -t kawinwallet .
+kubectl apply -f wallet.yaml
+sleep 5
+kubectl expose deployment kawinwallet --type=LoadBalancer --port=8080
+
+# Navigate to restaurant service
+cd ..
+cd Restaurant/
+./mvnw package
+docker build -t kawinrestaurant .
+kubectl apply -f restaurant.yaml
+sleep 5
+kubectl expose deployment kawinrestaurant --type=LoadBalancer --port=8080
 
 
 echo "Port Forwarding in progress"

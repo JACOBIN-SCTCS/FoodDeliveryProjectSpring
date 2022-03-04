@@ -81,10 +81,9 @@ def test():
 
     res_body = http_response.json()
 
+    # Check the status of agent 201
     agent_id2 = res_body.get("agentId")
     status2 = res_body.get("status")
-
-    print(status1, status2)
 
     if status2 != "unavailable":
         return "Fail5"
@@ -97,6 +96,9 @@ def test():
         return 'Fail6'
 
     res_body = http_response.json()
+    
+    # check the order status for order whose order id
+    # is given by variable orderId1
 
     orderId2 = res_body.get("orderId")
     status3  = res_body.get("status")

@@ -2,13 +2,14 @@ from http import HTTPStatus
 from threading import Thread
 import requests
 
-# Check if a customer's wallet balance is consistent
-# after we add and deduct the same amount from it concurrently.
+# Stress testing of delivery service
+# Number of records in 
 
 # RESTAURANT SERVICE    : http://localhost:8080
 # DELIVERY SERVICE      : http://localhost:8081
 # WALLET SERVICE        : http://localhost:8082
 
+MAXIMUM_REQUESTS = 100
 
 def t1(result):  # First concurrent request
 

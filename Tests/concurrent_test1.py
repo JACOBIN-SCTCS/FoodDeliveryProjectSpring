@@ -78,9 +78,9 @@ def test():
     res_body = http_response.json()
 
     cust_id2 = res_body.get("custId")
+    
+    # Check the final balance
     balance2 = res_body.get("balance")
-
-    print(balance1, balance2)
 
     if balance1 != balance2:
         return "Fail4"
