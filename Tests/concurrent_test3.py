@@ -62,21 +62,24 @@ def test():
 
     ### Parallel Execution Begins ###
 
-    thread = [0 for i in range(300)]
-    for i in range(100):
-        thread[3*i] = Thread(target=t1, kwargs={"result": result})
-        thread[(3*i)+1] = Thread(target=t2, kwargs={"result": result})
-        thread[(3*i)+2] = Thread(target=t3, kwargs={"result": result})
+    try:
+        thread = [0 for i in range(300)]
+        for i in range(100):
+            thread[3*i] = Thread(target=t1, kwargs={"result": result})
+            thread[(3*i)+1] = Thread(target=t2, kwargs={"result": result})
+            thread[(3*i)+2] = Thread(target=t3, kwargs={"result": result})
 
-    for i in range(100):
-        thread[3*i].start()
-        thread[(3*i)+1].start()
-        thread[(3*i)+2].start()
+        for i in range(100):
+            thread[3*i].start()
+            thread[(3*i)+1].start()
+            thread[(3*i)+2].start()
 
-    for i in range(100):
-        thread[3*i].join()
-        thread[(3*i)+1].join()
-        thread[(3*i)+2].join()
+        for i in range(100):
+            thread[3*i].join()
+            thread[(3*i)+1].join()
+            thread[(3*i)+2].join()
+    except:
+        return "Fail2"
 
     ### Parallel Execution Ends ###
 
